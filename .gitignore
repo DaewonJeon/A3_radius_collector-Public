@@ -1,0 +1,16 @@
+# .gitignore 내용
+
+# 1. 가상환경 폴더 (용량이 너무 크고, 동료는 requirements.txt로 설치하면 됨)
+venv/
+env/
+.env
+
+# 2. 파이썬 임시 파일들 (필요 없음)
+__pycache__/
+*.pyc
+
+# 3. 데이터베이스 파일 (보통 로컬 DB는 공유 안 함, 충돌 원인)
+db.sqlite3
+
+# 4. 운영체제별 임시 파일
+.DS_Store
