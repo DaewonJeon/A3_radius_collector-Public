@@ -14,27 +14,24 @@
 
 ---
 
-## 2. 설치 및 환경 설정 (Installation)
-
-이 프로젝트를 실행하기 위해서는 Python이 설치되어 있어야 합니다.
-
-### 2.1 가상환경 생성 및 활성화
-
-프로젝트 폴더에서 터미널을 열고 가상환경을 생성합니다.
-
-**Windows:**
+### 환경 설정
 ```bash
+# 1. 저장소 클론
+git clone [Repository URL]
+
+# 2. 가상환경 생성 및 패키지 설치
 python -m venv venv
-가상환경
-.\venv\Scripts\activate
-
-가상환경이 켜진 상태(괄호로 (venv)가 보이는 상태)에서 패키지를 설치합니다.
-
-Bash
-
+source venv/Scripts/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
+# 3. 환경 변수 설정 (.env 파일 생성)
+# KAKAO_API_KEY=your_kakao_rest_api_key
+```
 
-+ env
-+ python manage.py migrate
-+ python manage.py createsuperuser
+### 데이터 수집 실행
+```bash
+# 마이그레이션 (DB 초기화)
+python manage.py migrate
+# 수집 커맨드 실행
+python manage.py collect_cafes
+```
