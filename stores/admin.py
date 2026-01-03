@@ -1,7 +1,13 @@
 from django.contrib import admin
-from .models import NearbyStore
+from .models import DaisoStore, NearbyStore
 
-# 👇 이 부분이 있어야 화면에 나옵니다!
+# 다이소 지점 관리자 화면 설정
+@admin.register(DaisoStore)
+class DaisoStoreAdmin(admin.ModelAdmin):
+    list_display = ('name', 'address', 'daiso_id') # 목록에 보여줄 항목
+    search_fields = ('name', 'address') # 검색 기능 추가
+
+#  이 부분이 있어야 화면에 나옵니다!
 @admin.register(NearbyStore)
 class NearbyStoreAdmin(admin.ModelAdmin):
     # 목록에 보여줄 항목들 (상호, 전화번호, 거리(km), 주소, 기준지점)

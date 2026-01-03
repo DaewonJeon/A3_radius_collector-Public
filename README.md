@@ -5,6 +5,8 @@
 
 ---
 
+## 🔹🔹항상 KAKAO_API_KEY 주의할 것(실행코드에 삽입 + 커밋 시 삭제하기)🔹🔹
+ 
 ### 개발 환경 (Tech Stack)
 
 * **Language:** Python 3.10+
