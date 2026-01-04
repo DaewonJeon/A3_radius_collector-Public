@@ -1,24 +1,67 @@
 from django.contrib import admin
 from .models import DaisoStore, NearbyStore
 
-# 다이소 지점 관리자 화면 설정
+# 1. 다이소 매장 관리 (기존 유지 + 보완)
 @admin.register(DaisoStore)
 class DaisoStoreAdmin(admin.ModelAdmin):
-    list_display = ('name', 'address', 'daiso_id') # 목록에 보여줄 항목
-    search_fields = ('name', 'address') # 검색 기능 추가
+    list_display = ('name', 'daiso_id', 'address', 'display_coordinates')
+    search_fields = ('name', 'address', 'daiso_id')
+    readonly_fields = ('display_coordinates',)
 
-#  이 부분이 있어야 화면에 나옵니다!
+    # 좌표를 예쁘게 보여주는 함수
+    def display_coordinates(self, obj):
+        if obj.location:
+            return f"X:{obj.location.x:.6f}, Y:{obj.location.y:.6f}"
+        return "-"
+    display_coordinates.short_description = "좌표 (경도, 위도)"
+
+
+# 2. 주변 매장 (카페, 편의점) 관리 - 여기가 핵심!
 @admin.register(NearbyStore)
 class NearbyStoreAdmin(admin.ModelAdmin):
-    # 목록에 보여줄 항목들 (상호, 전화번호, 거리(km), 주소, 기준지점)
-    list_display = ('name', 'phone', 'distance_km', 'address', 'base_daiso')
+    # 목록에 보여줄 칼럼들
+    list_display = (
+        'name', 
+        'category_badge',  # 카테고리 (카페/편의점)
+        'distance_display', # 거리 (km 변환)
+        'base_daiso',      # 기준이 된 다이소 지점
+        'address', 
+        'display_coordinates'
+    )
     
-    # 검색창 추가 (상호명으로 검색 가능)
-    search_fields = ('name',)
+    # [중요] 오른쪽 사이드바에 필터 기능 추가
+    list_filter = (
+        'category',      # 카페 vs 편의점 클릭해서 필터링
+        'base_daiso',    # 특정 다이소 지점 데이터만 모아보기
+    )
 
-    # 거리(m)를 km 단위로 변환해서 보여주는 함수
-    def distance_km(self, obj):
-        if obj.distance:
-            return f"{obj.distance / 1000:.2f} km"
-        return "0 km"
-    distance_km.short_description = '거리 (km)'
+    # 검색 기능 (매장명, 기준 다이소 이름으로 검색)
+    search_fields = ('name', 'base_daiso', 'address')
+
+    # 페이징 처리 (데이터가 많으므로 한 페이지에 50개씩)
+    list_per_page = 50
+
+    # --- 커스텀 함수들 ---
+
+    # 1. 거리(m)를 km로 변환해서 보여주기
+    def distance_display(self, obj):
+        if obj.distance is not None:
+            if obj.distance < 1000:
+                return f"{obj.distance}m"
+            else:
+                return f"{obj.distance / 1000:.2f}km"
+        return "-"
+    distance_display.short_description = "거리"
+    distance_display.admin_order_field = 'distance' # 컬럼 클릭 시 거리순 정렬 가능하게 함
+
+    # 2. 좌표 보여주기 (location 필드에서 추출)
+    def display_coordinates(self, obj):
+        if obj.location:
+            return f"({obj.location.x:.5f}, {obj.location.y:.5f})"
+        return "-"
+    display_coordinates.short_description = "좌표"
+
+    # 3. 카테고리 좀 더 눈에 띄게 표시 (선택사항)
+    def category_badge(self, obj):
+        return obj.category
+    category_badge.short_description = "분류"
