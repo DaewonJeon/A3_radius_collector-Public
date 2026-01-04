@@ -13,6 +13,7 @@ class DaisoStore(models.Model):
 
 # 2. 주변 매장 정보
 class NearbyStore(models.Model):
+    place_id = models.CharField(max_length=50, unique=True) # 카카오 고유 ID 저장
     # [수정] ForeignKey 대신 다시 CharField(글자)로 변경!
     # 이렇게 하면 기존에 있던 "다이소 강남본점" 데이터와 충돌하지 않습니다.
     base_daiso = models.CharField(max_length=100) 

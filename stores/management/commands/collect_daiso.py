@@ -9,7 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # 1. API 키 설정 (본인의 키로 변경 필수!)
-        KAKAO_API_KEY = ' '
+        KAKAO_API_KEY = ''
         headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
         
         # 2. 서울의 25개 구 리스트

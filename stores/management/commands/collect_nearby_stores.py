@@ -89,20 +89,23 @@ class Command(BaseCommand):
                                 point = Point(lng, lat)
                                 dist = int(item.get('distance', 0))
                                 
+                                # [핵심 수정] 카카오의 고유 ID(item.get('id'))를 기준으로 중복 검사
+                                # 나머지는 모두 defaults(업데이트 대상)로 넣습니다.
                                 NearbyStore.objects.update_or_create(
-                                    name=item.get('place_name'),
-                                    base_daiso=daiso.name, 
-                                    location=point, 
+                                    place_id=item.get('id'), # 고유 ID를 기준값으로 설정
                                     defaults={
-                                        'category': item.get('category_group_name'),
+                                        'name': item.get('place_name'),
                                         'address': item.get('road_address_name') or item.get('address_name'),
                                         'phone': item.get('phone'),
-                                        'distance': dist,
-                                        'location': point
+                                        'category': item.get('category_group_name'),
+                                        'location': point,
+                                        'distance': dist, # 가장 마지막에 검색된 거리로 갱신됨
+                                        'base_daiso': daiso.name # 이 가게가 발견된 다이소 이름 (덮어쓰기 됨)
                                     }
                                 )
                                 stored_count += 1
-                            except Exception:
+                            except Exception as e:
+                                self.stdout.write(self.style.ERROR(f"저장 실패: {e}"))
                                 continue
 
                         if data.get('meta', {}).get('is_end'):
