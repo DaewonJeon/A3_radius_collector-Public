@@ -12,8 +12,9 @@ from pyproj import Transformer
 from stores.models import SeoulRestaurantLicense
 
 
-# 좌표계 변환기: TM 중부원점 (EPSG:2097) -> WGS84 (EPSG:4326)
-transformer = Transformer.from_crs("EPSG:2097", "EPSG:4326", always_xy=True)
+# 좌표계 변환기: Korea 1985 / Central Belt (EPSG:5174) -> WGS84 (EPSG:4326)
+# 서울시 OpenAPI의 X, Y 좌표는 EPSG:5174 좌표계 사용
+transformer = Transformer.from_crs("EPSG:5174", "EPSG:4326", always_xy=True)
 
 
 def convert_tm_to_wgs84(x, y):
