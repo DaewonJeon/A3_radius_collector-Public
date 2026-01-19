@@ -139,6 +139,42 @@ def collector_view(request):
     return render(request, 'collector.html')
 
 
+import requests
+
+def validate_kakao_rest_api_key(api_key):
+    """카카오 REST API 키 유효성 검증"""
+    try:
+        url = "https://dapi.kakao.com/v2/local/search/keyword.json"
+        headers = {"Authorization": f"KakaoAK {api_key}"}
+        params = {"query": "테스트"}
+        response = requests.get(url, headers=headers, params=params, timeout=5)
+        if response.status_code == 401:
+            return False, "카카오 REST API 키가 올바르지 않습니다."
+        return True, None
+    except Exception as e:
+        return False, f"카카오 REST API 검증 중 오류: {str(e)}"
+
+
+def validate_seoul_openapi_key(api_key):
+    """서울시 OpenAPI 키 유효성 검증"""
+    try:
+        url = f"http://openapi.seoul.go.kr:8088/{api_key}/json/LOCALDATA_072405_YP/1/1/"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        
+        # API 응답에서 에러 확인
+        if 'RESULT' in data:
+            code = data['RESULT'].get('CODE', '')
+            if code == 'INFO-200':
+                # 데이터 없음은 키는 유효함
+                return True, None
+            elif code in ['ERROR-300', 'ERROR-331', 'ERROR-332', 'ERROR-333', 'ERROR-334']:
+                return False, "서울시 OpenAPI 키가 올바르지 않습니다."
+        return True, None
+    except Exception as e:
+        return False, f"서울시 OpenAPI 검증 중 오류: {str(e)}"
+
+
 @csrf_exempt
 @require_POST
 def start_collection(request):
@@ -158,6 +194,17 @@ def start_collection(request):
         
         if not all([kakao_api_key, kakao_js_key, seoul_api_key]):
             return JsonResponse({'success': False, 'error': 'API 키가 누락되었습니다.'})
+        
+        # API 키 유효성 검증
+        # 1. 카카오 REST API 키 검증
+        is_valid, error_msg = validate_kakao_rest_api_key(kakao_api_key)
+        if not is_valid:
+            return JsonResponse({'success': False, 'error': error_msg})
+        
+        # 2. 서울시 OpenAPI 키 검증
+        is_valid, error_msg = validate_seoul_openapi_key(seoul_api_key)
+        if not is_valid:
+            return JsonResponse({'success': False, 'error': error_msg})
         
         # 상태 초기화
         collection_status = {

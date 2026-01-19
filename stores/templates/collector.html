@@ -1,34 +1,39 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="utf-8">
     <title>편의점 폐업 검증 시스템</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
             color: #fff;
         }
-        
+
         .container {
             display: flex;
             height: 100vh;
         }
-        
+
         /* 왼쪽: 지도 영역 */
         .map-section {
             flex: 1;
             position: relative;
         }
-        
+
         #map {
             width: 100%;
             height: 100%;
         }
-        
+
         .map-overlay {
             position: absolute;
             top: 20px;
@@ -39,28 +44,33 @@
             border-radius: 12px;
             z-index: 100;
         }
-        
+
         .map-overlay h3 {
             font-size: 14px;
             color: #4ECDC4;
             margin-bottom: 8px;
         }
-        
+
         .stats-row {
             display: flex;
             gap: 15px;
         }
-        
+
         .stat-item {
             display: flex;
             align-items: center;
             gap: 6px;
             font-size: 13px;
         }
-        
-        .stat-item.normal { color: #4ECDC4; }
-        .stat-item.closed { color: #FF6B6B; }
-        
+
+        .stat-item.normal {
+            color: #4ECDC4;
+        }
+
+        .stat-item.closed {
+            color: #FF6B6B;
+        }
+
         /* 오른쪽: 컨트롤 패널 */
         .control-section {
             width: 400px;
@@ -73,14 +83,14 @@
             gap: 25px;
             overflow-y: auto;
         }
-        
+
         .panel {
             background: rgba(255, 255, 255, 0.08);
             border-radius: 16px;
             padding: 24px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .panel-title {
             font-size: 16px;
             font-weight: 600;
@@ -89,11 +99,11 @@
             align-items: center;
             gap: 10px;
         }
-        
+
         .form-group {
             margin-bottom: 16px;
         }
-        
+
         .form-group label {
             display: block;
             font-size: 12px;
@@ -102,8 +112,9 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
-        .form-group input, .form-group select {
+
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 12px 16px;
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -113,17 +124,18 @@
             font-size: 14px;
             transition: all 0.3s ease;
         }
-        
-        .form-group input:focus, .form-group select:focus {
+
+        .form-group input:focus,
+        .form-group select:focus {
             outline: none;
             border-color: #4ECDC4;
             box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.2);
         }
-        
+
         .form-group input::placeholder {
             color: rgba(255, 255, 255, 0.3);
         }
-        
+
         .btn {
             width: 100%;
             padding: 14px 24px;
@@ -138,32 +150,32 @@
             justify-content: center;
             gap: 10px;
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #4ECDC4 0%, #44a8a0 100%);
             color: #1a1a2e;
         }
-        
+
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
         }
-        
+
         .btn-primary:disabled {
             background: rgba(255, 255, 255, 0.1);
             color: rgba(255, 255, 255, 0.3);
             cursor: not-allowed;
         }
-        
+
         /* 진행률 */
         .progress-section {
             display: none;
         }
-        
+
         .progress-section.active {
             display: block;
         }
-        
+
         .progress-bar {
             height: 8px;
             background: rgba(255, 255, 255, 0.1);
@@ -171,7 +183,7 @@
             overflow: hidden;
             margin-top: 12px;
         }
-        
+
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #4ECDC4 0%, #44a8a0 100%);
@@ -179,7 +191,7 @@
             transition: width 0.5s ease;
             width: 0%;
         }
-        
+
         .progress-text {
             display: flex;
             justify-content: space-between;
@@ -187,53 +199,58 @@
             margin-top: 10px;
             font-size: 13px;
         }
-        
+
         .progress-message {
             color: rgba(255, 255, 255, 0.7);
         }
-        
+
         .progress-percent {
             color: #4ECDC4;
             font-weight: 600;
         }
-        
+
         /* 결과 패널 */
         .result-panel {
             display: none;
         }
-        
+
         .result-panel.active {
             display: block;
         }
-        
+
         .result-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-top: 15px;
         }
-        
+
         .result-stat {
             background: rgba(0, 0, 0, 0.3);
             padding: 16px;
             border-radius: 12px;
             text-align: center;
         }
-        
+
         .result-stat .value {
             font-size: 28px;
             font-weight: 700;
         }
-        
+
         .result-stat .label {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.6);
             margin-top: 4px;
         }
-        
-        .result-stat.normal .value { color: #4ECDC4; }
-        .result-stat.closed .value { color: #FF6B6B; }
-        
+
+        .result-stat.normal .value {
+            color: #4ECDC4;
+        }
+
+        .result-stat.closed .value {
+            color: #FF6B6B;
+        }
+
         /* 에러 메시지 */
         .error-message {
             display: none;
@@ -245,11 +262,11 @@
             font-size: 13px;
             margin-top: 15px;
         }
-        
+
         .error-message.active {
             display: block;
         }
-        
+
         /* 로딩 스피너 */
         .spinner {
             width: 20px;
@@ -259,23 +276,25 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
-        
+
         /* 안내 텍스트 */
         .help-text {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.4);
             margin-top: 6px;
         }
-        
+
         .link {
             color: #4ECDC4;
             text-decoration: none;
         }
-        
+
         .link:hover {
             text-decoration: underline;
         }
@@ -287,20 +306,20 @@
             line-height: 1.5;
             min-width: 200px;
         }
-        
+
         .iw-content .name {
             font-weight: bold;
             font-size: 14px;
             color: #333;
             margin-bottom: 6px;
         }
-        
+
         .iw-content .address {
             color: #666;
             font-size: 12px;
             margin-bottom: 6px;
         }
-        
+
         .iw-content .status {
             display: inline-block;
             padding: 3px 10px;
@@ -308,18 +327,19 @@
             font-size: 12px;
             font-weight: bold;
         }
-        
+
         .iw-content .status.normal {
             background: #E3F2FD;
             color: #1976D2;
         }
-        
+
         .iw-content .status.closed {
             background: #FFEBEE;
             color: #D32F2F;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- 왼쪽: 지도 -->
@@ -333,14 +353,14 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- 오른쪽: 컨트롤 패널 -->
         <div class="control-section">
             <h1 style="font-size: 20px; margin-bottom: 5px;">🏪 편의점 폐업 검증 시스템</h1>
             <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 10px;">
                 카카오맵 데이터와 공공데이터를 교차 검증합니다
             </p>
-            
+
             <!-- API 키 설정 -->
             <div class="panel">
                 <div class="panel-title">🔑 API 키 설정</div>
@@ -354,6 +374,9 @@
                 <div class="form-group">
                     <label>KAKAO JavaScript KEY</label>
                     <input type="text" id="kakaoJsKey" placeholder="카카오 JavaScript 키 입력">
+                    <div class="help-text">
+                        지도가 로드되지 않으면 JavaScript 키가 잘못된 것입니다.
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>SEOUL OpenAPI KEY</label>
@@ -363,7 +386,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- 수집 설정 -->
             <div class="panel">
                 <div class="panel-title">📍 수집 설정</div>
@@ -397,11 +420,11 @@
                         <option value="중랑구">중랑구</option>
                     </select>
                 </div>
-                
+
                 <button class="btn btn-primary" id="startBtn" onclick="startCollection()">
                     🚀 수집 시작
                 </button>
-                
+
                 <!-- 진행률 -->
                 <div class="progress-section" id="progressSection">
                     <div class="progress-bar">
@@ -412,11 +435,11 @@
                         <span class="progress-percent" id="progressPercent">0%</span>
                     </div>
                 </div>
-                
+
                 <!-- 에러 메시지 -->
                 <div class="error-message" id="errorMessage"></div>
             </div>
-            
+
             <!-- 결과 패널 -->
             <div class="panel result-panel" id="resultPanel">
                 <div class="panel-title">📊 수집 결과</div>
@@ -433,29 +456,29 @@
             </div>
         </div>
     </div>
-    
+
     <!-- 카카오 지도 SDK (동적 로드) -->
     <script>
         let map = null;
         let markers = [];
         let pollingInterval = null;
-        
+
         // 지도 초기화
         function initMap(jsKey) {
             if (map) return;
-            
+
             // SDK 동적 로드
             const script = document.createElement('script');
             script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${jsKey}&autoload=false`;
-            script.onload = function() {
-                kakao.maps.load(function() {
+            script.onload = function () {
+                kakao.maps.load(function () {
                     const container = document.getElementById('map');
                     const options = {
                         center: new kakao.maps.LatLng(37.5171, 126.9066),
                         level: 5
                     };
                     map = new kakao.maps.Map(container, options);
-                    
+
                     // 줌 컨트롤 추가
                     const zoomControl = new kakao.maps.ZoomControl();
                     map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
@@ -463,23 +486,23 @@
             };
             document.head.appendChild(script);
         }
-        
+
         // 수집 시작
         function startCollection() {
             const kakaoApiKey = document.getElementById('kakaoApiKey').value.trim();
             const kakaoJsKey = document.getElementById('kakaoJsKey').value.trim();
             const seoulApiKey = document.getElementById('seoulApiKey').value.trim();
             const targetGu = document.getElementById('targetGu').value;
-            
+
             // 유효성 검사
             if (!kakaoApiKey || !kakaoJsKey || !seoulApiKey) {
                 showError('모든 API 키를 입력해주세요.');
                 return;
             }
-            
+
             // 지도 초기화
             initMap(kakaoJsKey);
-            
+
             // UI 상태 변경
             document.getElementById('startBtn').disabled = true;
             document.getElementById('startBtn').innerHTML = '<div class="spinner"></div> 수집 중...';
@@ -487,10 +510,10 @@
             document.getElementById('errorMessage').classList.remove('active');
             document.getElementById('resultPanel').classList.remove('active');
             document.getElementById('mapOverlay').style.display = 'none';
-            
+
             // 기존 마커 제거
             clearMarkers();
-            
+
             // 수집 시작 API 호출
             fetch('/api/start-collection/', {
                 method: 'POST',
@@ -505,158 +528,158 @@
                     target_gu: targetGu
                 })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 진행 상태 폴링 시작
-                    startPolling();
-                } else {
-                    showError(data.error || '수집 시작에 실패했습니다.');
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 진행 상태 폴링 시작
+                        startPolling();
+                    } else {
+                        showError(data.error || '수집 시작에 실패했습니다.');
+                        resetButton();
+                    }
+                })
+                .catch(error => {
+                    showError('서버 연결에 실패했습니다.');
                     resetButton();
-                }
-            })
-            .catch(error => {
-                showError('서버 연결에 실패했습니다.');
-                resetButton();
-            });
+                });
         }
-        
+
         // 진행 상태 폴링
         function startPolling() {
             pollingInterval = setInterval(checkStatus, 2000);
         }
-        
+
         function checkStatus() {
             fetch('/api/check-status/')
-            .then(response => response.json())
-            .then(data => {
-                updateProgress(data.progress, data.message);
-                
-                if (data.completed) {
-                    clearInterval(pollingInterval);
-                    loadResults();
-                } else if (data.error) {
-                    clearInterval(pollingInterval);
-                    showError(data.error);
-                    resetButton();
-                }
-            })
-            .catch(error => {
-                // 폴링 중 에러는 무시
-            });
+                .then(response => response.json())
+                .then(data => {
+                    updateProgress(data.progress, data.message);
+
+                    if (data.completed) {
+                        clearInterval(pollingInterval);
+                        loadResults();
+                    } else if (data.error) {
+                        clearInterval(pollingInterval);
+                        showError(data.error);
+                        resetButton();
+                    }
+                })
+                .catch(error => {
+                    // 폴링 중 에러는 무시
+                });
         }
-        
+
         function updateProgress(progress, message) {
             document.getElementById('progressFill').style.width = progress + '%';
             document.getElementById('progressPercent').textContent = progress + '%';
             document.getElementById('progressMessage').textContent = message;
         }
-        
+
         // 결과 로드
         function loadResults() {
             fetch('/api/get-results/')
-            .then(response => response.json())
-            .then(data => {
-                displayResults(data);
-                resetButton();
-            })
-            .catch(error => {
-                showError('결과를 불러오는데 실패했습니다.');
-                resetButton();
-            });
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data);
+                    resetButton();
+                })
+                .catch(error => {
+                    showError('결과를 불러오는데 실패했습니다.');
+                    resetButton();
+                });
         }
-        
+
         // 결과 표시
         function displayResults(data) {
             const stores = data.stores;
             let normalCount = 0;
             let closedCount = 0;
-            
+
             // 지도 중심 이동
             if (stores.length > 0) {
                 const bounds = new kakao.maps.LatLngBounds();
-                
+
                 stores.forEach(store => {
                     if (!store.lat || !store.lng) return;
-                    
+
                     const position = new kakao.maps.LatLng(store.lat, store.lng);
                     bounds.extend(position);
-                    
+
                     // 마커 이미지
                     const isNormal = store.status === '정상';
                     const markerColor = isNormal ?
                         'https://t1.daumcdn.net/localimg/localimages/07/2018/pc/img/marker_spot.png' :
                         'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
-                    
+
                     const imageSize = new kakao.maps.Size(36, 37);
                     const imageOption = { offset: new kakao.maps.Point(13, 37) };
                     const markerImage = new kakao.maps.MarkerImage(markerColor, imageSize, imageOption);
-                    
+
                     const marker = new kakao.maps.Marker({
                         position: position,
                         title: store.name,
                         image: markerImage
                     });
-                    
+
                     marker.setMap(map);
                     markers.push(marker);
-                    
+
                     // 인포윈도우
                     const statusClass = isNormal ? 'normal' : 'closed';
                     const statusText = isNormal ? '🔵 정상 영업' : '🔴 폐업 추정';
-                    
+
                     const iwContent = `<div class="iw-content">
                         <div class="name">${store.name}</div>
                         <div class="address">${store.address}</div>
                         <div class="status ${statusClass}">${statusText}</div>
                     </div>`;
-                    
+
                     const infowindow = new kakao.maps.InfoWindow({
                         content: iwContent,
                         removable: true
                     });
-                    
-                    kakao.maps.event.addListener(marker, 'click', function() {
+
+                    kakao.maps.event.addListener(marker, 'click', function () {
                         infowindow.open(map, marker);
                     });
-                    
+
                     if (isNormal) normalCount++;
                     else closedCount++;
                 });
-                
+
                 map.setBounds(bounds);
             }
-            
+
             // 결과 표시
             document.getElementById('normalCount').textContent = normalCount;
             document.getElementById('closedCount').textContent = closedCount;
             document.getElementById('resultNormal').textContent = normalCount;
             document.getElementById('resultClosed').textContent = closedCount;
-            
+
             document.getElementById('mapOverlay').style.display = 'block';
             document.getElementById('resultPanel').classList.add('active');
             document.getElementById('progressSection').classList.remove('active');
         }
-        
+
         // 마커 제거
         function clearMarkers() {
             markers.forEach(marker => marker.setMap(null));
             markers = [];
         }
-        
+
         // 에러 표시
         function showError(message) {
             const errorEl = document.getElementById('errorMessage');
             errorEl.textContent = message;
             errorEl.classList.add('active');
         }
-        
+
         // 버튼 리셋
         function resetButton() {
             document.getElementById('startBtn').disabled = false;
             document.getElementById('startBtn').innerHTML = '🚀 수집 시작';
         }
-        
+
         // CSRF 토큰 가져오기
         function getCookie(name) {
             let cookieValue = null;
@@ -672,26 +695,26 @@
             }
             return cookieValue;
         }
-        
+
         // 페이지 로드 시 localStorage에서 키 복원
-        window.onload = function() {
+        window.onload = function () {
             const savedKeys = localStorage.getItem('apiKeys');
             if (savedKeys) {
                 const keys = JSON.parse(savedKeys);
                 document.getElementById('kakaoApiKey').value = keys.kakaoApiKey || '';
                 document.getElementById('kakaoJsKey').value = keys.kakaoJsKey || '';
                 document.getElementById('seoulApiKey').value = keys.seoulApiKey || '';
-                
+
                 // 지도 미리 초기화
                 if (keys.kakaoJsKey) {
                     initMap(keys.kakaoJsKey);
                 }
             }
         };
-        
+
         // 키 입력 시 localStorage에 저장
         ['kakaoApiKey', 'kakaoJsKey', 'seoulApiKey'].forEach(id => {
-            document.getElementById(id).addEventListener('change', function() {
+            document.getElementById(id).addEventListener('change', function () {
                 const keys = {
                     kakaoApiKey: document.getElementById('kakaoApiKey').value,
                     kakaoJsKey: document.getElementById('kakaoJsKey').value,
@@ -702,4 +725,5 @@
         });
     </script>
 </body>
+
 </html>
