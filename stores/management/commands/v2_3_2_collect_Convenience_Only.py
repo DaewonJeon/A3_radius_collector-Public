@@ -74,13 +74,13 @@ class Command(BaseCommand):
         target_gu = options['gu']
         radius_km = options['radius']
         
-        # 기존 데이터 삭제 옵션
+        # 기존 데이터 삭제 옵션 (해당 구의 데이터만 삭제)
         if options['clear']:
-            deleted_count = YeongdeungpoConvenience.objects.all().delete()[0]
-            self.stdout.write(self.style.WARNING(f"기존 편의점 데이터 {deleted_count}개 삭제"))
+            deleted_count = YeongdeungpoConvenience.objects.filter(gu=target_gu).delete()[0]
+            self.stdout.write(self.style.WARNING(f"{target_gu} 기존 편의점 데이터 {deleted_count}개 삭제"))
         
-        # 영등포구 다이소 전체 조회
-        daiso_list = YeongdeungpoDaiso.objects.all()
+        # 해당 구 다이소 전체 조회
+        daiso_list = YeongdeungpoDaiso.objects.filter(gu=target_gu)
         total_daiso_count = daiso_list.count()
         
         if total_daiso_count == 0:
@@ -182,7 +182,8 @@ class Command(BaseCommand):
                                         'phone': item.get('phone'),
                                         'location': point,
                                         'distance': dist,
-                                        'base_daiso': daiso.name
+                                        'base_daiso': daiso.name,
+                                        'gu': target_gu,  # 구 정보 저장
                                     }
                                 )
                                 stored_count += 1

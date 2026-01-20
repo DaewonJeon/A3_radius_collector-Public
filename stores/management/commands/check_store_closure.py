@@ -129,12 +129,12 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("=" * 70))
         
         # ========================================
-        # 1단계: 카카오 API 편의점 데이터 로드 (기준 데이터)
+        # 1단계: 카카오 API 편의점 데이터 로드 (기준 데이터) - 해당 구만
         # ========================================
         self.stdout.write("\n📥 [1단계] 카카오 API 편의점 데이터 로드 (기준 데이터)...")
         
-        kakao_qs = YeongdeungpoConvenience.objects.all()
-        self.stdout.write(f"  ✅ 카카오 API 편의점: {kakao_qs.count()}개")
+        kakao_qs = YeongdeungpoConvenience.objects.filter(gu=target_gu)
+        self.stdout.write(f"  ✅ {target_gu} 카카오 API 편의점: {kakao_qs.count()}개")
         
         kakao_data = []
         for store in kakao_qs:
@@ -160,9 +160,9 @@ class Command(BaseCommand):
         # ========================================
         self.stdout.write("\n📥 [2단계] 비교 데이터셋 로드...")
         
-        # 2-1. 휴게음식점 (SeoulRestaurantLicense) - 편의점 필터
-        restaurant_qs = SeoulRestaurantLicense.objects.filter(uptaenm='편의점')
-        self.stdout.write(f"  ✅ 휴게음식점(편의점): {restaurant_qs.count()}개")
+        # 2-1. 휴게음식점 (SeoulRestaurantLicense) - 해당 구 + 편의점 필터
+        restaurant_qs = SeoulRestaurantLicense.objects.filter(gu=target_gu, uptaenm='편의점')
+        self.stdout.write(f"  ✅ {target_gu} 휴게음식점(편의점): {restaurant_qs.count()}개")
         
         restaurant_names = set()
         restaurant_addresses = set()
@@ -185,9 +185,9 @@ class Command(BaseCommand):
             if lat_r is not None and lng_r is not None:
                 restaurant_coords.add((lat_r, lng_r))
         
-        # 2-2. 담배소매점 (TobaccoRetailLicense)
-        tobacco_qs = TobaccoRetailLicense.objects.all()
-        self.stdout.write(f"  ✅ 담배소매점: {tobacco_qs.count()}개")
+        # 2-2. 담배소매점 (TobaccoRetailLicense) - 해당 구만
+        tobacco_qs = TobaccoRetailLicense.objects.filter(gu=target_gu)
+        self.stdout.write(f"  ✅ {target_gu} 담배소매점: {tobacco_qs.count()}개")
         
         tobacco_names = set()
         tobacco_addresses = set()
@@ -338,6 +338,7 @@ class Command(BaseCommand):
                     defaults={
                         'name': r['이름'],
                         'address': r['주소'],
+                        'gu': target_gu,  # 구 정보 저장
                         'latitude': lat,
                         'longitude': lng,
                         'location': location,

@@ -69,8 +69,8 @@ class Command(BaseCommand):
             return
         
         if clear and not dry_run:
-            deleted_count = SeoulRestaurantLicense.objects.filter(uptaenm='편의점').delete()[0]
-            self.stdout.write(self.style.WARNING(f'기존 편의점 데이터 {deleted_count}건 삭제'))
+            deleted_count = SeoulRestaurantLicense.objects.filter(gu=target_gu, uptaenm='편의점').delete()[0]
+            self.stdout.write(self.style.WARNING(f'{target_gu} 기존 편의점 데이터 {deleted_count}건 삭제'))
         
         self.stdout.write(self.style.SUCCESS(f'=== 서울시 {target_gu} 휴게음식점 인허가 정보 수집 시작 ==='))
         self.stdout.write(f'서비스명: {service_name}')
@@ -114,7 +114,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('\n[DRY RUN] DB 저장 생략'))
             self.print_sample_data(all_convenience_stores[:10])
         else:
-            saved_count, updated_count = self.save_to_db(all_convenience_stores)
+            saved_count, updated_count = self.save_to_db(all_convenience_stores, target_gu)
             self.stdout.write(self.style.SUCCESS(f'\nDB 저장 완료: 신규 {saved_count}건, 업데이트 {updated_count}건'))
         
         self.stdout.write(self.style.SUCCESS('=== 수집 완료 ==='))
@@ -151,7 +151,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'데이터 조회 오류: {e}'))
             return []
 
-    def save_to_db(self, stores):
+    def save_to_db(self, stores, target_gu):
         """DB에 저장 (update_or_create 사용)"""
         saved_count = 0
         updated_count = 0
@@ -176,6 +176,7 @@ class Command(BaseCommand):
             
             defaults = {
                 'opnsfteamcode': store.get('OPNSFTEAMCODE', ''),
+                'gu': target_gu,  # 구 정보 저장
                 'bplcnm': store.get('BPLCNM', ''),
                 'uptaenm': store.get('UPTAENM', ''),
                 'sntuptaenm': store.get('SNTUPTAENM', ''),

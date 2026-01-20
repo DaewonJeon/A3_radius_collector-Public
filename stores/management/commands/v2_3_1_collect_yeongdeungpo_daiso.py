@@ -134,10 +134,10 @@ class Command(BaseCommand):
             os.environ.get('KAKAO_API_KEY', '')
         )
         
-        # 기존 데이터 삭제 옵션
+        # 기존 데이터 삭제 옵션 (해당 구의 데이터만 삭제)
         if options.get('clear'):
-            deleted_count = YeongdeungpoDaiso.objects.all().delete()[0]
-            self.stdout.write(self.style.WARNING(f"🗑️ 기존 데이터 {deleted_count}개 삭제"))
+            deleted_count = YeongdeungpoDaiso.objects.filter(gu=target_gu).delete()[0]
+            self.stdout.write(self.style.WARNING(f"🗑️ {target_gu} 기존 데이터 {deleted_count}개 삭제"))
         
         self.stdout.write(self.style.SUCCESS("=" * 60))
         self.stdout.write(self.style.SUCCESS(f"📦 {target_gu} 다이소 수집 V2 시작 (공식 API + 카카오 보완)"))
@@ -151,7 +151,16 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("다이소 API에서 데이터를 가져오지 못했습니다."))
             return
         
-        self.stdout.write(f"  → {len(stores)}개 매장 발견")
+        self.stdout.write(f"  → API에서 {len(stores)}개 매장 발견")
+        
+        # 서울 지역 매장만 필터링 (부산 강서구 등 다른 지역 제외)
+        original_count = len(stores)
+        stores = [s for s in stores if '서울' in s.get('strAddr', '')]
+        filtered_count = original_count - len(stores)
+        
+        if filtered_count > 0:
+            self.stdout.write(self.style.WARNING(f"  ⚠️ 서울 외 지역 {filtered_count}개 매장 필터링됨"))
+        self.stdout.write(f"  서울 지역 {len(stores)}개 매장 대상")
         
         collected_count = 0
         補完_count = 0
@@ -197,6 +206,7 @@ class Command(BaseCommand):
                         'name': f"다이소 {name}",
                         'address': address,
                         'location': point,
+                        'gu': target_gu,  # 구 정보 저장
                     }
                 )
                 

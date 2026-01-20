@@ -32,29 +32,31 @@ class NearbyStore(models.Model):
         return f"{self.name} (near {self.base_daiso})"
 
 
-# 3. 영등포구 다이소 전용 모델 (서울 전체와 분리)
+# 3. 서울 다이소 모델 (구별 저장 지원)
 class YeongdeungpoDaiso(models.Model):
-    """영등포구 내 다이소 지점 (서울 전체와 분리)"""
+    """서울 구별 다이소 지점 저장"""
     name = models.CharField(max_length=100)       # 지점명
     address = models.CharField(max_length=200)    # 주소
     daiso_id = models.CharField(max_length=50, unique=True)  # 카카오 place_id
+    gu = models.CharField(max_length=20, default='영등포구', verbose_name='구')  # 구 정보
     location = gis_models.PointField(srid=4326, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'yeongdeungpo_daiso'
-        verbose_name = '영등포구 다이소'
-        verbose_name_plural = '영등포구 다이소 목록'
+        verbose_name = '서울 다이소 (구별)'
+        verbose_name_plural = '서울 다이소 목록 (구별)'
 
     def __str__(self):
-        return f"[영등포] {self.name}"
+        return f"[{self.gu}] {self.name}"
 
 
-# 4. 영등포구 편의점 전용 모델 (서울 전체와 분리)
+# 4. 서울 편의점 모델 (구별 저장 지원)
 class YeongdeungpoConvenience(models.Model):
-    """영등포구 다이소 주변 편의점 (서울 전체와 분리)"""
+    """서울 구별 다이소 주변 편의점 저장"""
     place_id = models.CharField(max_length=50, unique=True)  # 카카오 고유 ID
     base_daiso = models.CharField(max_length=100)  # 기준이 된 다이소 지점명
+    gu = models.CharField(max_length=20, default='영등포구', verbose_name='구')  # 구 정보
     
     name = models.CharField(max_length=100)
     address = models.CharField(max_length=200)
@@ -66,18 +68,19 @@ class YeongdeungpoConvenience(models.Model):
 
     class Meta:
         db_table = 'yeongdeungpo_convenience'
-        verbose_name = '영등포구 편의점'
-        verbose_name_plural = '영등포구 편의점 목록'
+        verbose_name = '서울 편의점 (구별)'
+        verbose_name_plural = '서울 편의점 목록 (구별)'
 
     def __str__(self):
-        return f"[영등포] {self.name} (near {self.base_daiso})"
+        return f"[{self.gu}] {self.name} (near {self.base_daiso})"
 
 
 # 5. 서울시 Open API 휴게음식점 인허가 정보 (편의점 등)
 class SeoulRestaurantLicense(models.Model):
-    """서울시 Open API에서 가져온 휴게음식점 인허가 정보"""
+    """서울시 Open API에서 가져온 휴게음식점 인허가 정보 (구별 저장)"""
     mgtno = models.CharField(max_length=100, unique=True, verbose_name='관리번호')  # 관리번호 (고유키)
     opnsfteamcode = models.CharField(max_length=20, null=True, blank=True, verbose_name='개방자치단체코드')
+    gu = models.CharField(max_length=20, default='영등포구', verbose_name='구')  # 구 정보
     
     # 사업장 정보
     bplcnm = models.CharField(max_length=200, verbose_name='사업장명')
@@ -140,18 +143,19 @@ class SeoulRestaurantLicense(models.Model):
 
     class Meta:
         db_table = 'yeongdeungpo_convenience_license'
-        verbose_name = '영등포구 편의점 인허가'
-        verbose_name_plural = '영등포구 편의점 인허가 목록'
+        verbose_name = '서울 편의점 인허가 (구별)'
+        verbose_name_plural = '서울 편의점 인허가 목록 (구별)'
 
     def __str__(self):
-        return f"[{self.uptaenm}] {self.bplcnm} ({self.trdstatenm})"
+        return f"[{self.gu}] [{self.uptaenm}] {self.bplcnm} ({self.trdstatenm})"
 
 
 # 6. 서울시 Open API 담배소매업 인허가 정보
 class TobaccoRetailLicense(models.Model):
-    """서울시 Open API에서 가져온 담배소매업 인허가 정보 (LOCALDATA_114302_YD)"""
+    """서울시 Open API에서 가져온 담배소매업 인허가 정보 (구별 저장)"""
     mgtno = models.CharField(max_length=100, unique=True, verbose_name='관리번호')  # 관리번호 (고유키)
     opnsfteamcode = models.CharField(max_length=20, null=True, blank=True, verbose_name='개방자치단체코드')
+    gu = models.CharField(max_length=20, default='영등포구', verbose_name='구')  # 구 정보
     
     # 사업장 정보
     bplcnm = models.CharField(max_length=200, verbose_name='사업장명')
@@ -206,16 +210,16 @@ class TobaccoRetailLicense(models.Model):
 
     class Meta:
         db_table = 'yeongdeungpo_tobacco_retail_license'
-        verbose_name = '영등포구 담배소매업 인허가'
-        verbose_name_plural = '영등포구 담배소매업 인허가 목록'
+        verbose_name = '서울 담배소매업 인허가 (구별)'
+        verbose_name_plural = '서울 담배소매업 인허가 목록 (구별)'
 
     def __str__(self):
-        return f"[담배소매업] {self.bplcnm} ({self.trdstatenm})"
+        return f"[{self.gu}] [담배소매업] {self.bplcnm} ({self.trdstatenm})"
 
 
 # 7. 폐업 매장 체크 결과 저장
 class StoreClosureResult(models.Model):
-    """카카오맵 폐업 매장 체크 결과"""
+    """카카오맵 폐업 매장 체크 결과 (구별 저장)"""
     
     STATUS_CHOICES = [
         ('정상', '정상 영업'),
@@ -225,6 +229,7 @@ class StoreClosureResult(models.Model):
     place_id = models.CharField(max_length=50, unique=True, verbose_name='카카오 Place ID')
     name = models.CharField(max_length=200, verbose_name='매장명')
     address = models.CharField(max_length=300, verbose_name='주소')
+    gu = models.CharField(max_length=20, default='영등포구', verbose_name='구')  # 구 정보
     latitude = models.FloatField(null=True, blank=True, verbose_name='위도')
     longitude = models.FloatField(null=True, blank=True, verbose_name='경도')
     location = gis_models.PointField(srid=4326, null=True, blank=True, verbose_name='위치')
@@ -237,9 +242,9 @@ class StoreClosureResult(models.Model):
 
     class Meta:
         db_table = 'store_closure_result'
-        verbose_name = '폐업 매장 체크 결과'
-        verbose_name_plural = '폐업 매장 체크 결과 목록'
+        verbose_name = '폐업 매장 체크 결과 (구별)'
+        verbose_name_plural = '폐업 매장 체크 결과 목록 (구별)'
         ordering = ['-checked_at']
 
     def __str__(self):
-        return f"[{self.status}] {self.name}"
+        return f"[{self.gu}] [{self.status}] {self.name}"

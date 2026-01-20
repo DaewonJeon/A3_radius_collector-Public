@@ -67,12 +67,12 @@ class NearbyStoreAdmin(admin.ModelAdmin):
     category_badge.short_description = "분류"
 
 
-# 3. 영등포구 다이소 관리
+# 3. 서울 다이소 관리 (구별)
 @admin.register(YeongdeungpoDaiso)
 class YeongdeungpoDaisoAdmin(admin.ModelAdmin):
-    list_display = ('name', 'daiso_id', 'address', 'display_coordinates', 'created_at')
-    search_fields = ('name', 'address', 'daiso_id')
-    list_filter = ('created_at',)
+    list_display = ('name', 'gu', 'daiso_id', 'address', 'display_coordinates', 'created_at')
+    search_fields = ('name', 'address', 'daiso_id', 'gu')
+    list_filter = ('gu', 'created_at')
     list_per_page = 50
 
     def display_coordinates(self, obj):
@@ -82,12 +82,12 @@ class YeongdeungpoDaisoAdmin(admin.ModelAdmin):
     display_coordinates.short_description = "좌표"
 
 
-# 4. 영등포구 편의점 관리
+# 4. 서울 편의점 관리 (구별)
 @admin.register(YeongdeungpoConvenience)
 class YeongdeungpoConvenienceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'distance_display', 'base_daiso', 'address', 'display_coordinates')
-    search_fields = ('name', 'address', 'base_daiso')
-    list_filter = ('base_daiso', 'created_at')
+    list_display = ('name', 'gu', 'distance_display', 'base_daiso', 'address', 'display_coordinates')
+    search_fields = ('name', 'address', 'base_daiso', 'gu')
+    list_filter = ('gu', 'base_daiso', 'created_at')
     list_per_page = 50
 
     def distance_display(self, obj):
@@ -107,11 +107,12 @@ class YeongdeungpoConvenienceAdmin(admin.ModelAdmin):
     display_coordinates.short_description = "좌표"
 
 
-# 5. 서울시 휴게음식점 인허가 정보 (편의점) 관리
+# 5. 서울시 휴게음식점 인허가 정보 (편의점) 관리 (구별)
 @admin.register(SeoulRestaurantLicense)
 class SeoulRestaurantLicenseAdmin(admin.ModelAdmin):
     list_display = (
         'bplcnm',           # 사업장명
+        'gu',               # 구
         'uptaenm',          # 업태구분명
         'trdstatenm',       # 영업상태명
         'rdnwhladdr',       # 도로명주소
@@ -122,6 +123,7 @@ class SeoulRestaurantLicenseAdmin(admin.ModelAdmin):
     
     # 필터 기능
     list_filter = (
+        'gu',               # 구별 필터
         'trdstatenm',       # 영업상태 (영업/정상, 폐업 등)
         'uptaenm',          # 업태구분 (편의점 등)
         'dtlstatenm',       # 상세영업상태
@@ -158,11 +160,12 @@ class SeoulRestaurantLicenseAdmin(admin.ModelAdmin):
     )
 
 
-# 6. 영등포구 담배소매업 인허가 정보 관리
+# 6. 서울 담배소매업 인허가 정보 관리 (구별)
 @admin.register(TobaccoRetailLicense)
 class TobaccoRetailLicenseAdmin(admin.ModelAdmin):
     list_display = (
         'bplcnm',           # 사업장명
+        'gu',               # 구
         'trdstatenm',       # 영업상태명
         'rdnwhladdr',       # 도로명주소
         'latitude',         # 위도
@@ -173,6 +176,7 @@ class TobaccoRetailLicenseAdmin(admin.ModelAdmin):
     
     # 필터 기능
     list_filter = (
+        'gu',               # 구별 필터
         'trdstatenm',       # 영업상태 (영업/정상, 폐업 등)
         'dtlstatenm',       # 상세영업상태
     )
