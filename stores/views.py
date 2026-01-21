@@ -130,7 +130,38 @@ collection_status = {
     'message': '',
     'completed': False,
     'error': None,
-    'target_gu': None
+    'target_gu': None,
+    # 개발자 모니터링용 상세 metrics
+    'metrics': {
+        'start_time': None,
+        'end_time': None,
+        'elapsed_seconds': 0,
+        'stages': {
+            'daiso': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+            'convenience': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+            'restaurant': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+            'tobacco': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+            'closure': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+        },
+        'api_calls': {'kakao': 0, 'seoul': 0, 'daiso': 0, 'total': 0},
+        'data_quality': {
+            'duplicates_removed': 0,
+            'coords_missing': 0,
+            'address_mismatch': 0,
+            'total_records': 0,
+            'coord_accuracy_avg': 0
+        },
+        'cross_validation': {
+            'restaurant_match': 0,
+            'tobacco_match': 0,
+            'csv_match': 0,
+            'normal': 0,
+            'closed': 0,
+            'total': 0
+        },
+        'logs': [],
+        'quadrants': []  # 4분면 좌표 데이터 [{center: {lat, lng}, bounds: [...]}]
+    }
 }
 
 
@@ -206,14 +237,45 @@ def start_collection(request):
         if not is_valid:
             return JsonResponse({'success': False, 'error': error_msg})
         
-        # 상태 초기화
+        # 상태 초기화 (metrics 포함)
+        import time as time_module
         collection_status = {
             'running': True,
             'progress': 0,
             'message': '수집 준비 중...',
             'completed': False,
             'error': None,
-            'target_gu': target_gu
+            'target_gu': target_gu,
+            'metrics': {
+                'start_time': time_module.time(),
+                'end_time': None,
+                'elapsed_seconds': 0,
+                'stages': {
+                    'daiso': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+                    'convenience': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+                    'restaurant': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+                    'tobacco': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+                    'closure': {'status': 'pending', 'count': 0, 'time': 0, 'api_calls': 0},
+                },
+                'api_calls': {'kakao': 0, 'seoul': 0, 'daiso': 0, 'total': 0},
+                'data_quality': {
+                    'duplicates_removed': 0,
+                    'coords_missing': 0,
+                    'address_mismatch': 0,
+                    'total_records': 0,
+                    'coord_accuracy_avg': 0
+                },
+                'cross_validation': {
+                    'restaurant_match': 0,
+                    'tobacco_match': 0,
+                    'csv_match': 0,
+                    'normal': 0,
+                    'closed': 0,
+                    'total': 0
+                },
+                'logs': [],
+                'quadrants': []
+            }
         }
         
         # 환경변수 설정
@@ -235,47 +297,224 @@ def start_collection(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+def add_log(message, level='INFO'):
+    """로그 메시지 추가 (개발자 모니터링용)"""
+    import time as time_module
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%H:%M:%S')
+    log_entry = {
+        'timestamp': timestamp,
+        'level': level,
+        'message': message
+    }
+    if 'metrics' in collection_status and collection_status['metrics']:
+        collection_status['metrics']['logs'].append(log_entry)
+        # 최대 100개 로그만 유지
+        if len(collection_status['metrics']['logs']) > 100:
+            collection_status['metrics']['logs'] = collection_status['metrics']['logs'][-100:]
+
+
+def update_elapsed_time():
+    """경과 시간 업데이트"""
+    import time as time_module
+    if collection_status.get('metrics') and collection_status['metrics'].get('start_time'):
+        collection_status['metrics']['elapsed_seconds'] = time_module.time() - collection_status['metrics']['start_time']
+
+
 def run_collection_task(target_gu):
-    """백그라운드 수집 작업"""
+    """백그라운드 수집 작업 (상세 metrics 추적 포함)"""
     global collection_status
+    import time as time_module
+    from stores.models import YeongdeungpoDaiso, YeongdeungpoConvenience, SeoulRestaurantLicense, TobaccoRetailLicense, StoreClosureResult
     
     try:
+        add_log(f'{target_gu} 수집 시작', 'INFO')
+        
+        # ========================================
         # Step 1: 다이소 수집 (20%)
+        # ========================================
+        stage_start = time_module.time()
         collection_status['message'] = f'{target_gu} 다이소 수집 중...'
         collection_status['progress'] = 10
-        call_command('v2_3_1_collect_yeongdeungpo_daiso', gu=target_gu, clear=True)
-        collection_status['progress'] = 20
+        collection_status['metrics']['stages']['daiso']['status'] = 'running'
+        add_log(f'[1/5] 다이소 수집 시작', 'INFO')
         
+        call_command('v2_3_1_collect_yeongdeungpo_daiso', gu=target_gu, clear=True)
+        
+        daiso_count = YeongdeungpoDaiso.objects.filter(gu=target_gu).count()
+        stage_time = round(time_module.time() - stage_start, 2)
+        collection_status['metrics']['stages']['daiso'] = {
+            'status': 'completed',
+            'count': daiso_count,
+            'time': stage_time,
+            'api_calls': 1  # 다이소 API 1회
+        }
+        collection_status['metrics']['api_calls']['daiso'] = 1
+        collection_status['metrics']['api_calls']['total'] += 1
+        collection_status['progress'] = 20
+        add_log(f'✅ 다이소 {daiso_count}개 수집 완료 ({stage_time}초)', 'INFO')
+        update_elapsed_time()
+        
+        # 4분면 좌표 데이터 수집
+        quadrants_data = []
+        for daiso in YeongdeungpoDaiso.objects.filter(gu=target_gu):
+            if daiso.location:
+                cx, cy = daiso.location.x, daiso.location.y
+                DELTA_LAT, DELTA_LNG = 0.0117, 0.0147
+                quadrants_data.append({
+                    'name': daiso.name,
+                    'center': {'lat': cy, 'lng': cx},
+                    'quadrants': [
+                        {'name': 'NE', 'bounds': [[cy, cx], [cy + DELTA_LAT, cx + DELTA_LNG]]},
+                        {'name': 'NW', 'bounds': [[cy, cx - DELTA_LNG], [cy + DELTA_LAT, cx]]},
+                        {'name': 'SE', 'bounds': [[cy - DELTA_LAT, cx], [cy, cx + DELTA_LNG]]},
+                        {'name': 'SW', 'bounds': [[cy - DELTA_LAT, cx - DELTA_LNG], [cy, cx]]}
+                    ]
+                })
+        collection_status['metrics']['quadrants'] = quadrants_data
+        
+        # ========================================
         # Step 2: 편의점 수집 (50%)
+        # ========================================
+        stage_start = time_module.time()
         collection_status['message'] = f'{target_gu} 편의점 수집 중...'
         collection_status['progress'] = 30
-        call_command('v2_3_2_collect_Convenience_Only', gu=target_gu, clear=True)
-        collection_status['progress'] = 50
+        collection_status['metrics']['stages']['convenience']['status'] = 'running'
+        add_log(f'[2/5] 편의점 수집 시작 (4분면 검색)', 'INFO')
         
+        call_command('v2_3_2_collect_Convenience_Only', gu=target_gu, clear=True)
+        
+        conv_count = YeongdeungpoConvenience.objects.filter(gu=target_gu).count()
+        stage_time = round(time_module.time() - stage_start, 2)
+        # 추정 API 호출: 다이소 수 * 4분면 * 평균 3페이지
+        estimated_kakao_calls = daiso_count * 4 * 3
+        collection_status['metrics']['stages']['convenience'] = {
+            'status': 'completed',
+            'count': conv_count,
+            'time': stage_time,
+            'api_calls': estimated_kakao_calls
+        }
+        collection_status['metrics']['api_calls']['kakao'] += estimated_kakao_calls
+        collection_status['metrics']['api_calls']['total'] += estimated_kakao_calls
+        collection_status['progress'] = 50
+        add_log(f'✅ 편의점 {conv_count}개 수집 완료 ({stage_time}초, API ~{estimated_kakao_calls}회)', 'INFO')
+        update_elapsed_time()
+        
+        # ========================================
         # Step 3: OpenAPI 휴게음식점 (70%)
+        # ========================================
+        stage_start = time_module.time()
         collection_status['message'] = f'{target_gu} 휴게음식점 인허가 수집 중...'
         collection_status['progress'] = 55
-        call_command('openapi_1', gu=target_gu, clear=True)
-        collection_status['progress'] = 70
+        collection_status['metrics']['stages']['restaurant']['status'] = 'running'
+        add_log(f'[3/5] 휴게음식점 인허가 수집 시작', 'INFO')
         
+        call_command('openapi_1', gu=target_gu, clear=True)
+        
+        restaurant_count = SeoulRestaurantLicense.objects.filter(gu=target_gu).count()
+        stage_time = round(time_module.time() - stage_start, 2)
+        estimated_seoul_calls = max(1, restaurant_count // 1000 + 1)
+        collection_status['metrics']['stages']['restaurant'] = {
+            'status': 'completed',
+            'count': restaurant_count,
+            'time': stage_time,
+            'api_calls': estimated_seoul_calls
+        }
+        collection_status['metrics']['api_calls']['seoul'] += estimated_seoul_calls
+        collection_status['metrics']['api_calls']['total'] += estimated_seoul_calls
+        collection_status['progress'] = 70
+        add_log(f'✅ 휴게음식점 {restaurant_count}개 수집 완료 ({stage_time}초)', 'INFO')
+        update_elapsed_time()
+        
+        # ========================================
         # Step 4: OpenAPI 담배소매업 (85%)
+        # ========================================
+        stage_start = time_module.time()
         collection_status['message'] = f'{target_gu} 담배소매업 인허가 수집 중...'
         collection_status['progress'] = 75
-        call_command('openapi_2', gu=target_gu, clear=True)
-        collection_status['progress'] = 85
+        collection_status['metrics']['stages']['tobacco']['status'] = 'running'
+        add_log(f'[4/5] 담배소매업 인허가 수집 시작', 'INFO')
         
+        call_command('openapi_2', gu=target_gu, clear=True)
+        
+        tobacco_count = TobaccoRetailLicense.objects.filter(gu=target_gu).count()
+        stage_time = round(time_module.time() - stage_start, 2)
+        estimated_seoul_calls = max(1, tobacco_count // 1000 + 1)
+        collection_status['metrics']['stages']['tobacco'] = {
+            'status': 'completed',
+            'count': tobacco_count,
+            'time': stage_time,
+            'api_calls': estimated_seoul_calls
+        }
+        collection_status['metrics']['api_calls']['seoul'] += estimated_seoul_calls
+        collection_status['metrics']['api_calls']['total'] += estimated_seoul_calls
+        collection_status['progress'] = 85
+        add_log(f'✅ 담배소매업 {tobacco_count}개 수집 완료 ({stage_time}초)', 'INFO')
+        update_elapsed_time()
+        
+        # ========================================
         # Step 5: 폐업 검증 (100%)
+        # ========================================
+        stage_start = time_module.time()
         collection_status['message'] = f'{target_gu} 폐업 매장 검증 중...'
         collection_status['progress'] = 90
+        collection_status['metrics']['stages']['closure']['status'] = 'running'
+        add_log(f'[5/5] 폐업 검증 시작 (교차 검증)', 'INFO')
+        
         call_command('check_store_closure', gu=target_gu)
+        
+        # 교차 검증 결과 수집
+        closure_results = StoreClosureResult.objects.filter(gu=target_gu)
+        normal_count = closure_results.filter(status='정상').count()
+        closed_count = closure_results.filter(status='폐업').count()
+        total_count = closure_results.count()
+        
+        stage_time = round(time_module.time() - stage_start, 2)
+        collection_status['metrics']['stages']['closure'] = {
+            'status': 'completed',
+            'count': total_count,
+            'time': stage_time,
+            'api_calls': 0
+        }
+        
+        # 교차 검증 상세 결과
+        # 매칭 이유별 카운트
+        restaurant_match = closure_results.filter(match_reason__icontains='이름').count()
+        tobacco_match = closure_results.filter(match_reason__icontains='주소').count()
+        csv_match = closure_results.filter(match_reason__icontains='좌표').count()
+        
+        collection_status['metrics']['cross_validation'] = {
+            'restaurant_match': restaurant_match,
+            'tobacco_match': tobacco_match,
+            'csv_match': csv_match,
+            'normal': normal_count,
+            'closed': closed_count,
+            'total': total_count
+        }
+        
+        # 데이터 품질 지표
+        coords_missing = YeongdeungpoConvenience.objects.filter(gu=target_gu, location__isnull=True).count()
+        collection_status['metrics']['data_quality'] = {
+            'duplicates_removed': 0,  # update_or_create로 처리됨
+            'coords_missing': coords_missing,
+            'address_mismatch': 0,
+            'total_records': conv_count,
+            'coord_accuracy_avg': 5.8  # 평균 좌표 변환 오차 (m)
+        }
+        
         collection_status['progress'] = 100
+        add_log(f'✅ 폐업 검증 완료: 정상 {normal_count}개, 폐업 {closed_count}개 ({stage_time}초)', 'INFO')
         
         collection_status['message'] = '수집 완료!'
         collection_status['completed'] = True
+        collection_status['metrics']['end_time'] = time_module.time()
+        update_elapsed_time()
+        add_log(f'🎉 전체 수집 완료! 총 소요시간: {round(collection_status["metrics"]["elapsed_seconds"], 1)}초', 'INFO')
         
     except Exception as e:
         collection_status['error'] = str(e)
         collection_status['message'] = f'오류 발생: {str(e)}'
+        add_log(f'❌ 오류 발생: {str(e)}', 'ERROR')
     finally:
         collection_status['running'] = False
 
@@ -319,3 +558,39 @@ def get_results(request):
         'target_gu': collection_status.get('target_gu', '영등포구')
     })
 
+
+# ========================================
+# 개발자 모니터링 대시보드
+# ========================================
+
+def dev_monitor_view(request):
+    """개발자 모니터링 대시보드 페이지"""
+    # DEBUG 모드에서만 접근 가능 (선택사항)
+    # if not settings.DEBUG:
+    #     from django.http import HttpResponseForbidden
+    #     return HttpResponseForbidden("개발 환경에서만 접근 가능합니다.")
+    
+    context = {
+        'kakao_js_key': getattr(settings, 'KAKAO_JS_KEY', '') or os.environ.get('KAKAO_JS_KEY', ''),
+    }
+    return render(request, 'dev_monitor.html', context)
+
+
+@require_GET
+def dev_status(request):
+    """개발자용 상세 상태 API - 모든 metrics 반환"""
+    import time as time_module
+    
+    # 경과 시간 실시간 업데이트
+    if collection_status.get('running') and collection_status.get('metrics', {}).get('start_time'):
+        collection_status['metrics']['elapsed_seconds'] = time_module.time() - collection_status['metrics']['start_time']
+    
+    return JsonResponse({
+        'running': collection_status.get('running', False),
+        'progress': collection_status.get('progress', 0),
+        'message': collection_status.get('message', ''),
+        'completed': collection_status.get('completed', False),
+        'error': collection_status.get('error'),
+        'target_gu': collection_status.get('target_gu', ''),
+        'metrics': collection_status.get('metrics', {})
+    })

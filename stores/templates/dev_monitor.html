@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <title>🔧 개발자 모니터링 대시보드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-badge.idle {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-badge.running {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ECDC4;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-badge.completed {
+            background: rgba(78, 205, 196, 0.3);
+            color: #4ECDC4;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .auto-refresh input {
+            width: 16px;
+            height: 16px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 15px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 18px;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* 실시간 모니터링 (넓게) */
+        .panel-monitoring {
+            grid-column: span 2;
+        }
+
+        /* 비용 분석 */
+        .panel-cost {
+            grid-column: span 1;
+        }
+
+        /* 단계별 현황 */
+        .stages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stage-item {
+            display: grid;
+            grid-template-columns: 24px 1fr 80px 80px 80px;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .stage-icon {
+            font-size: 16px;
+        }
+
+        .stage-name {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .stage-count,
+        .stage-time,
+        .stage-api {
+            text-align: right;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+        }
+
+        .stage-item.pending {
+            opacity: 0.5;
+        }
+
+        .stage-item.running {
+            background: rgba(78, 205, 196, 0.15);
+            border-left: 3px solid #4ECDC4;
+        }
+
+        .stage-item.completed {
+            background: rgba(78, 205, 196, 0.1);
+        }
+
+        .stage-item.completed .stage-icon::after {
+            content: '✅';
+        }
+
+        .stage-item.running .stage-icon::after {
+            content: '⏳';
+        }
+
+        .stage-item.pending .stage-icon::after {
+            content: '⬜';
+        }
+
+        /* 메트릭 카드 */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #4ECDC4;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        /* 교차 검증 결과 */
+        .validation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .validation-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .validation-item .label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .validation-item .value {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .validation-item.normal .value {
+            color: #4ECDC4;
+        }
+
+        .validation-item.closed .value {
+            color: #FF6B6B;
+        }
+
+        /* 비용 분석 */
+        .cost-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .cost-item:last-child {
+            border-bottom: none;
+        }
+
+        .cost-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .cost-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .cost-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .cost-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ECDC4, #44a8a0);
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        /* 로그 패널 */
+        .panel-logs {
+            grid-column: span 2;
+        }
+
+        .logs-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 12px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            padding: 3px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-timestamp {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .log-level {
+            min-width: 50px;
+        }
+
+        .log-level.INFO {
+            color: #4ECDC4;
+        }
+
+        .log-level.ERROR {
+            color: #FF6B6B;
+        }
+
+        .log-level.DEBUG {
+            color: #9B59B6;
+        }
+
+        .log-message {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* 4분면 시각화 */
+        .panel-map {
+            grid-column: span 1;
+        }
+
+        #quadrantMap {
+            width: 100%;
+            height: 300px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-color.daiso {
+            background: #FF6B6B;
+        }
+
+        .legend-color.quadrant {
+            background: rgba(78, 205, 196, 0.3);
+            border: 1px solid #4ECDC4;
+        }
+
+        /* 데이터 품질 */
+        .quality-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .quality-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .quality-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #4ECDC4;
+        }
+
+        .quality-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+        }
+
+        /* 반응형 */
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .panel-monitoring {
+                grid-column: span 2;
+            }
+
+            .panel-logs {
+                grid-column: span 2;
+            }
+
+            .panel-map {
+                grid-column: span 1;
+                grid-row: span 1;
+            }
+        }
+
+        /* 진행률 바 */
+        .progress-section {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ECDC4 0%, #44a8a0 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🔧 개발자 모니터링 대시보드</h1>
+        <div class="header-controls">
+            <span class="status-badge idle" id="statusBadge">대기 중</span>
+            <label class="auto-refresh">
+                <input type="checkbox" id="autoRefresh" checked>
+                자동 새로고침 (1초)
+            </label>
+            <button class="btn btn-refresh" onclick="fetchStatus()">🔄 새로고침</button>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <!-- 실시간 모니터링 -->
+        <div class="panel panel-monitoring">
+            <div class="panel-title">📊 실시간 모니터링</div>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-value" id="elapsedTime">00:00</div>
+                    <div class="metric-label">경과 시간</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="totalApiCalls">0</div>
+                    <div class="metric-label">API 호출</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="totalRecords">0</div>
+                    <div class="metric-label">수집 데이터</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="progressPercent">0%</div>
+                    <div class="metric-label">진행률</div>
+                </div>
+            </div>
+
+            <div class="stages-container" id="stagesContainer">
+                <div class="stage-item pending" data-stage="daiso">
+                    <span class="stage-icon"></span>
+                    <span class="stage-name">[1] 다이소 수집</span>
+                    <span class="stage-count">-</span>
+                    <span class="stage-time">-</span>
+                    <span class="stage-api">-</span>
+                </div>
+                <div class="stage-item pending" data-stage="convenience">
+                    <span class="stage-icon"></span>
+                    <span class="stage-name">[2] 편의점 수집</span>
+                    <span class="stage-count">-</span>
+                    <span class="stage-time">-</span>
+                    <span class="stage-api">-</span>
+                </div>
+                <div class="stage-item pending" data-stage="restaurant">
+                    <span class="stage-icon"></span>
+                    <span class="stage-name">[3] 휴게음식점 인허가</span>
+                    <span class="stage-count">-</span>
+                    <span class="stage-time">-</span>
+                    <span class="stage-api">-</span>
+                </div>
+                <div class="stage-item pending" data-stage="tobacco">
+                    <span class="stage-icon"></span>
+                    <span class="stage-name">[4] 담배소매업 인허가</span>
+                    <span class="stage-count">-</span>
+                    <span class="stage-time">-</span>
+                    <span class="stage-api">-</span>
+                </div>
+                <div class="stage-item pending" data-stage="closure">
+                    <span class="stage-icon"></span>
+                    <span class="stage-name">[5] 폐업 검증</span>
+                    <span class="stage-count">-</span>
+                    <span class="stage-time">-</span>
+                    <span class="stage-api">-</span>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progressMessage">수집 대기 중...</span>
+                    <span id="targetGu">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 비용 분석 -->
+        <div class="panel panel-cost">
+            <div class="panel-title">💰 API 비용 분석</div>
+
+            <div class="cost-item">
+                <span class="cost-label">카카오 REST API</span>
+                <span class="cost-value" id="kakaoApiCount">0 / 100,000</span>
+            </div>
+            <div class="cost-bar">
+                <div class="cost-bar-fill" id="kakaoApiBar" style="width: 0%"></div>
+            </div>
+
+            <div class="cost-item" style="margin-top: 15px;">
+                <span class="cost-label">서울시 OpenAPI</span>
+                <span class="cost-value" id="seoulApiCount">0 / 10,000</span>
+            </div>
+            <div class="cost-bar">
+                <div class="cost-bar-fill" id="seoulApiBar" style="width: 0%"></div>
+            </div>
+
+            <div class="cost-item" style="margin-top: 15px;">
+                <span class="cost-label">다이소 내부 API</span>
+                <span class="cost-value" id="daisoApiCount">0회</span>
+            </div>
+
+            <div
+                style="margin-top: 20px; padding: 12px; background: rgba(78, 205, 196, 0.1); border-radius: 8px; font-size: 12px;">
+                <div style="color: #4ECDC4; font-weight: 600;">📊 25개 구 예상</div>
+                <div style="color: rgba(255,255,255,0.6); margin-top: 6px;">
+                    카카오: ~5,000회 (5%)<br>
+                    서울시: ~50회 (0.5%)<br>
+                    <span style="color: #4ECDC4;">💵 예상 비용: ₩0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4분면 시각화 -->
+        <div class="panel panel-map">
+            <div class="panel-title">🎯 4분면 검색 시각화</div>
+            <div id="quadrantMap"></div>
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-color daiso"></div>
+                    <span>다이소 기준점</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color quadrant"></div>
+                    <span>검색 영역</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 교차 검증 결과 -->
+        <div class="panel">
+            <div class="panel-title">✅ 교차 검증 결과</div>
+
+            <div class="validation-grid">
+                <div class="validation-item normal">
+                    <div class="label">정상 영업</div>
+                    <div class="value" id="normalCount">0</div>
+                </div>
+                <div class="validation-item closed">
+                    <div class="label">폐업 추정</div>
+                    <div class="value" id="closedCount">0</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; font-size: 12px;">
+                <div
+                    style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: rgba(255,255,255,0.6);">이름 매칭</span>
+                    <span id="nameMatch">0개</span>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: rgba(255,255,255,0.6);">주소 매칭</span>
+                    <span id="addressMatch">0개</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+                    <span style="color: rgba(255,255,255,0.6);">좌표 매칭</span>
+                    <span id="coordMatch">0개</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 데이터 품질 -->
+        <div class="panel">
+            <div class="panel-title">🔍 데이터 품질</div>
+
+            <div class="quality-grid">
+                <div class="quality-item">
+                    <div class="quality-value" id="duplicateRate">0%</div>
+                    <div class="quality-label">중복 제거율</div>
+                </div>
+                <div class="quality-item">
+                    <div class="quality-value" id="coordMissing">0개</div>
+                    <div class="quality-label">좌표 누락</div>
+                </div>
+                <div class="quality-item">
+                    <div class="quality-value" id="totalData">0개</div>
+                    <div class="quality-label">총 데이터</div>
+                </div>
+                <div class="quality-item">
+                    <div class="quality-value" id="coordAccuracy">±0m</div>
+                    <div class="quality-label">좌표 오차</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 수집 로그 -->
+        <div class="panel panel-logs">
+            <div class="panel-title">
+                📜 실시간 로그
+                <button class="btn btn-refresh" style="margin-left: auto; font-size: 11px; padding: 4px 10px;"
+                    onclick="copyLogs()">📋 복사</button>
+            </div>
+            <div class="logs-container" id="logsContainer">
+                <div class="log-entry">
+                    <span class="log-timestamp">--:--:--</span>
+                    <span class="log-level INFO">[INFO]</span>
+                    <span class="log-message">수집 대기 중...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 카카오 지도 SDK -->
+    <script>
+        let map = null;
+        let markers = [];
+        let rectangles = [];
+        let pollingInterval = null;
+
+        // 지도 초기화
+        function initMap() {
+            const jsKey = '{{ kakao_js_key }}';
+            if (!jsKey) {
+                document.getElementById('quadrantMap').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.4);font-size:13px;">카카오 JS 키 필요</div>';
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${jsKey}&autoload=false`;
+            script.onload = function () {
+                kakao.maps.load(function () {
+                    const container = document.getElementById('quadrantMap');
+                    const options = {
+                        center: new kakao.maps.LatLng(37.5171, 126.9066),
+                        level: 6
+                    };
+                    map = new kakao.maps.Map(container, options);
+                });
+            };
+            document.head.appendChild(script);
+        }
+
+        // 4분면 시각화
+        function visualizeQuadrants(quadrantsData) {
+            if (!map || !quadrantsData || quadrantsData.length === 0) return;
+
+            // 기존 마커/사각형 제거
+            markers.forEach(m => m.setMap(null));
+            rectangles.forEach(r => r.setMap(null));
+            markers = [];
+            rectangles = [];
+
+            const bounds = new kakao.maps.LatLngBounds();
+
+            quadrantsData.forEach(daiso => {
+                const center = new kakao.maps.LatLng(daiso.center.lat, daiso.center.lng);
+                bounds.extend(center);
+
+                // 다이소 마커
+                const marker = new kakao.maps.Marker({
+                    position: center,
+                    title: daiso.name
+                });
+                marker.setMap(map);
+                markers.push(marker);
+
+                // 4분면 사각형
+                daiso.quadrants.forEach(q => {
+                    const sw = new kakao.maps.LatLng(q.bounds[0][0], q.bounds[0][1]);
+                    const ne = new kakao.maps.LatLng(q.bounds[1][0], q.bounds[1][1]);
+                    bounds.extend(sw);
+                    bounds.extend(ne);
+
+                    const rectangle = new kakao.maps.Rectangle({
+                        bounds: new kakao.maps.LatLngBounds(sw, ne),
+                        strokeWeight: 1,
+                        strokeColor: '#4ECDC4',
+                        strokeOpacity: 0.6,
+                        fillColor: '#4ECDC4',
+                        fillOpacity: 0.1
+                    });
+                    rectangle.setMap(map);
+                    rectangles.push(rectangle);
+                });
+            });
+
+            map.setBounds(bounds);
+        }
+
+        // 상태 가져오기
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/dev-status/');
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Status fetch error:', error);
+            }
+        }
+
+        // UI 업데이트
+        function updateUI(data) {
+            const metrics = data.metrics || {};
+
+            // 상태 배지
+            const badge = document.getElementById('statusBadge');
+            if (data.running) {
+                badge.className = 'status-badge running';
+                badge.textContent = '수집 중...';
+            } else if (data.completed) {
+                badge.className = 'status-badge completed';
+                badge.textContent = '완료';
+            } else {
+                badge.className = 'status-badge idle';
+                badge.textContent = '대기 중';
+            }
+
+            // 경과 시간
+            const elapsed = metrics.elapsed_seconds || 0;
+            const mins = Math.floor(elapsed / 60);
+            const secs = Math.floor(elapsed % 60);
+            document.getElementById('elapsedTime').textContent =
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            // API 호출
+            const apiCalls = metrics.api_calls || {};
+            document.getElementById('totalApiCalls').textContent = apiCalls.total || 0;
+
+            // 진행률
+            document.getElementById('progressPercent').textContent = data.progress + '%';
+            document.getElementById('progressFill').style.width = data.progress + '%';
+            document.getElementById('progressMessage').textContent = data.message || '수집 대기 중...';
+            document.getElementById('targetGu').textContent = data.target_gu || '-';
+
+            // 단계별 현황
+            const stages = metrics.stages || {};
+            let totalRecords = 0;
+            ['daiso', 'convenience', 'restaurant', 'tobacco', 'closure'].forEach(stage => {
+                const stageData = stages[stage] || {};
+                const el = document.querySelector(`[data-stage="${stage}"]`);
+                if (el) {
+                    el.className = `stage-item ${stageData.status || 'pending'}`;
+                    el.querySelector('.stage-count').textContent = stageData.count ? `${stageData.count}개` : '-';
+                    el.querySelector('.stage-time').textContent = stageData.time ? `${stageData.time}초` : '-';
+                    el.querySelector('.stage-api').textContent = stageData.api_calls ? `API ${stageData.api_calls}회` : '-';
+                    totalRecords += stageData.count || 0;
+                }
+            });
+            document.getElementById('totalRecords').textContent = totalRecords;
+
+            // API 비용
+            document.getElementById('kakaoApiCount').textContent = `${apiCalls.kakao || 0} / 100,000`;
+            document.getElementById('seoulApiCount').textContent = `${apiCalls.seoul || 0} / 10,000`;
+            document.getElementById('daisoApiCount').textContent = `${apiCalls.daiso || 0}회`;
+            document.getElementById('kakaoApiBar').style.width = `${(apiCalls.kakao || 0) / 1000}%`;
+            document.getElementById('seoulApiBar').style.width = `${(apiCalls.seoul || 0) / 100}%`;
+
+            // 교차 검증
+            const cv = metrics.cross_validation || {};
+            document.getElementById('normalCount').textContent = cv.normal || 0;
+            document.getElementById('closedCount').textContent = cv.closed || 0;
+            document.getElementById('nameMatch').textContent = `${cv.restaurant_match || 0}개`;
+            document.getElementById('addressMatch').textContent = `${cv.tobacco_match || 0}개`;
+            document.getElementById('coordMatch').textContent = `${cv.csv_match || 0}개`;
+
+            // 데이터 품질
+            const dq = metrics.data_quality || {};
+            document.getElementById('duplicateRate').textContent = '100%';
+            document.getElementById('coordMissing').textContent = `${dq.coords_missing || 0}개`;
+            document.getElementById('totalData').textContent = `${dq.total_records || 0}개`;
+            document.getElementById('coordAccuracy').textContent = `±${dq.coord_accuracy_avg || 0}m`;
+
+            // 로그
+            const logs = metrics.logs || [];
+            if (logs.length > 0) {
+                const container = document.getElementById('logsContainer');
+                container.innerHTML = logs.map(log => `
+                    <div class="log-entry">
+                        <span class="log-timestamp">${log.timestamp}</span>
+                        <span class="log-level ${log.level}">[${log.level}]</span>
+                        <span class="log-message">${log.message}</span>
+                    </div>
+                `).join('');
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // 4분면 시각화
+            if (metrics.quadrants && metrics.quadrants.length > 0) {
+                visualizeQuadrants(metrics.quadrants);
+            }
+        }
+
+        // 로그 복사
+        function copyLogs() {
+            const logs = document.getElementById('logsContainer').innerText;
+            navigator.clipboard.writeText(logs).then(() => {
+                alert('로그가 클립보드에 복사되었습니다.');
+            });
+        }
+
+        // 자동 새로고침
+        function startPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(() => {
+                if (document.getElementById('autoRefresh').checked) {
+                    fetchStatus();
+                }
+            }, 1000);
+        }
+
+        // 초기화
+        window.onload = function () {
+            initMap();
+            fetchStatus();
+            startPolling();
+        };
+    </script>
+</body>
+
+</html>

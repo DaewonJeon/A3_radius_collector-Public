@@ -23,7 +23,9 @@ from stores.views import (
     collector_view,
     start_collection,
     check_status,
-    get_results
+    get_results,
+    dev_monitor_view,
+    dev_status
 )
 
 urlpatterns = [
@@ -32,8 +34,12 @@ urlpatterns = [
     path("map/", map_view, name="map_view"), 
     path("store-closure/", store_closure_map_view, name="store_closure_map"),
     
+    # 개발자 모니터링 대시보드
+    path("dev/monitor/", dev_monitor_view, name="dev_monitor"),
+    
     # API 엔드포인트
     path("api/start-collection/", start_collection, name="start_collection"),
     path("api/check-status/", check_status, name="check_status"),
     path("api/get-results/", get_results, name="get_results"),
+    path("api/dev-status/", dev_status, name="dev_status"),
 ]
