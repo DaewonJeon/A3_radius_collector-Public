@@ -124,8 +124,8 @@ class Command(BaseCommand):
         
         target_gu = options['gu']
         
-        # 구 이름에서 '구' 제거하여 키워드 생성 (예: 영등포구 → 영등포)
-        keyword = target_gu.replace('구', '')
+        # 구 이름 끝의 '구'만 제거하여 키워드 생성 (예: 영등포구 → 영등포, 구로구 → 구로)
+        keyword = target_gu[:-1] if target_gu.endswith('구') else target_gu
         
         # 카카오 API 키 설정
         KAKAO_API_KEY = (

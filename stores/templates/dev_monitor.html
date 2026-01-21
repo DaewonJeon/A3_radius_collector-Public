@@ -655,6 +655,52 @@
             </div>
         </div>
 
+        <!-- 시스템 리소스 모니터링 -->
+        <div class="panel">
+            <div class="panel-title">🖥️ 시스템 리소스</div>
+
+            <div class="quality-grid">
+                <div class="quality-item">
+                    <div class="quality-value" id="cpuPercent">0%</div>
+                    <div class="quality-label">CPU 사용률</div>
+                </div>
+                <div class="quality-item">
+                    <div class="quality-value" id="memoryPercent">0%</div>
+                    <div class="quality-label">메모리</div>
+                </div>
+                <div class="quality-item">
+                    <div class="quality-value" id="diskPercent">0%</div>
+                    <div class="quality-label">디스크</div>
+                </div>
+                <div class="quality-item">
+                    <div class="quality-value" id="threadCount">0</div>
+                    <div class="quality-label">스레드</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; font-size: 12px;">
+                <div
+                    style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: rgba(255,255,255,0.6);">CPU 코어</span>
+                    <span id="cpuCores">0개</span>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: rgba(255,255,255,0.6);">메모리 사용</span>
+                    <span id="memoryUsed">0 / 0 MB</span>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span style="color: rgba(255,255,255,0.6);">프로세스 메모리</span>
+                    <span id="processMemory">0 MB</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+                    <span style="color: rgba(255,255,255,0.6);">네트워크</span>
+                    <span id="networkIO">↑0 ↓0 MB</span>
+                </div>
+            </div>
+        </div>
+
         <!-- 수집 로그 -->
         <div class="panel panel-logs">
             <div class="panel-title">
@@ -849,6 +895,27 @@
             // 4분면 시각화
             if (metrics.quadrants && metrics.quadrants.length > 0) {
                 visualizeQuadrants(metrics.quadrants);
+            }
+
+            // 시스템 리소스
+            const sys = data.system || {};
+            if (!sys.error) {
+                const cpu = sys.cpu || {};
+                const mem = sys.memory || {};
+                const disk = sys.disk || {};
+                const net = sys.network || {};
+                const proc = sys.process || {};
+                const threads = sys.threads || {};
+
+                document.getElementById('cpuPercent').textContent = `${cpu.percent || 0}%`;
+                document.getElementById('memoryPercent').textContent = `${mem.percent || 0}%`;
+                document.getElementById('diskPercent').textContent = `${disk.percent || 0}%`;
+                document.getElementById('threadCount').textContent = threads.active || 0;
+
+                document.getElementById('cpuCores').textContent = `${cpu.cores || 0}개`;
+                document.getElementById('memoryUsed').textContent = `${mem.used_mb || 0} / ${mem.total_mb || 0} MB`;
+                document.getElementById('processMemory').textContent = `${proc.memory_mb || 0} MB`;
+                document.getElementById('networkIO').textContent = `↑${net.sent_mb || 0} ↓${net.recv_mb || 0} MB`;
             }
         }
 

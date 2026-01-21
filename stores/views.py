@@ -353,6 +353,11 @@ def run_collection_task(target_gu):
         collection_status['metrics']['api_calls']['total'] += 1
         collection_status['progress'] = 20
         add_log(f'✅ 다이소 {daiso_count}개 수집 완료 ({stage_time}초)', 'INFO')
+        
+        # 수집된 다이소 지점 목록 로그
+        for daiso in YeongdeungpoDaiso.objects.filter(gu=target_gu):
+            add_log(f'  📍 {daiso.name}', 'INFO')
+        
         update_elapsed_time()
         
         # 4분면 좌표 데이터 수집
@@ -578,12 +583,16 @@ def dev_monitor_view(request):
 
 @require_GET
 def dev_status(request):
-    """개발자용 상세 상태 API - 모든 metrics 반환"""
+    """개발자용 상세 상태 API - 모든 metrics + 시스템 리소스 반환"""
     import time as time_module
+    import threading
     
     # 경과 시간 실시간 업데이트
     if collection_status.get('running') and collection_status.get('metrics', {}).get('start_time'):
         collection_status['metrics']['elapsed_seconds'] = time_module.time() - collection_status['metrics']['start_time']
+    
+    # 시스템 리소스 수집
+    system_info = get_system_metrics()
     
     return JsonResponse({
         'running': collection_status.get('running', False),
@@ -592,5 +601,86 @@ def dev_status(request):
         'completed': collection_status.get('completed', False),
         'error': collection_status.get('error'),
         'target_gu': collection_status.get('target_gu', ''),
-        'metrics': collection_status.get('metrics', {})
+        'metrics': collection_status.get('metrics', {}),
+        'system': system_info
     })
+
+
+def get_system_metrics():
+    """시스템 리소스 메트릭 수집 (psutil)"""
+    import threading
+    
+    try:
+        import psutil
+        
+        # CPU
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        cpu_count = psutil.cpu_count()
+        
+        # Memory
+        memory = psutil.virtual_memory()
+        memory_used_mb = round(memory.used / (1024 * 1024), 1)
+        memory_total_mb = round(memory.total / (1024 * 1024), 1)
+        memory_percent = memory.percent
+        
+        # Disk
+        disk = psutil.disk_usage('/')
+        disk_used_gb = round(disk.used / (1024 * 1024 * 1024), 1)
+        disk_total_gb = round(disk.total / (1024 * 1024 * 1024), 1)
+        disk_percent = disk.percent
+        
+        # Network (bytes since boot)
+        net = psutil.net_io_counters()
+        net_sent_mb = round(net.bytes_sent / (1024 * 1024), 1)
+        net_recv_mb = round(net.bytes_recv / (1024 * 1024), 1)
+        
+        # Process info
+        process = psutil.Process()
+        process_memory_mb = round(process.memory_info().rss / (1024 * 1024), 1)
+        process_cpu = process.cpu_percent(interval=0.1)
+        
+        # Threads
+        active_threads = threading.active_count()
+        
+        return {
+            'cpu': {
+                'percent': cpu_percent,
+                'cores': cpu_count,
+            },
+            'memory': {
+                'used_mb': memory_used_mb,
+                'total_mb': memory_total_mb,
+                'percent': memory_percent,
+            },
+            'disk': {
+                'used_gb': disk_used_gb,
+                'total_gb': disk_total_gb,
+                'percent': disk_percent,
+            },
+            'network': {
+                'sent_mb': net_sent_mb,
+                'recv_mb': net_recv_mb,
+            },
+            'process': {
+                'memory_mb': process_memory_mb,
+                'cpu_percent': process_cpu,
+            },
+            'threads': {
+                'active': active_threads,
+            }
+        }
+    except ImportError:
+        # psutil이 설치되지 않은 경우
+        return {
+            'cpu': {'percent': 0, 'cores': 0},
+            'memory': {'used_mb': 0, 'total_mb': 0, 'percent': 0},
+            'disk': {'used_gb': 0, 'total_gb': 0, 'percent': 0},
+            'network': {'sent_mb': 0, 'recv_mb': 0},
+            'process': {'memory_mb': 0, 'cpu_percent': 0},
+            'threads': {'active': 0},
+            'error': 'psutil not installed'
+        }
+    except Exception as e:
+        return {
+            'error': str(e)
+        }
