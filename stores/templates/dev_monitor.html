@@ -376,7 +376,7 @@
         }
 
         .legend-color.daiso {
-            background: #FF6B6B;
+            background: #3396FF;
         }
 
         .legend-color.quadrant {
@@ -547,41 +547,7 @@
             </div>
         </div>
 
-        <!-- 비용 분석 -->
-        <div class="panel panel-cost">
-            <div class="panel-title">💰 API 비용 분석</div>
 
-            <div class="cost-item">
-                <span class="cost-label">카카오 REST API</span>
-                <span class="cost-value" id="kakaoApiCount">0 / 100,000</span>
-            </div>
-            <div class="cost-bar">
-                <div class="cost-bar-fill" id="kakaoApiBar" style="width: 0%"></div>
-            </div>
-
-            <div class="cost-item" style="margin-top: 15px;">
-                <span class="cost-label">서울시 OpenAPI</span>
-                <span class="cost-value" id="seoulApiCount">0 / 10,000</span>
-            </div>
-            <div class="cost-bar">
-                <div class="cost-bar-fill" id="seoulApiBar" style="width: 0%"></div>
-            </div>
-
-            <div class="cost-item" style="margin-top: 15px;">
-                <span class="cost-label">다이소 내부 API</span>
-                <span class="cost-value" id="daisoApiCount">0회</span>
-            </div>
-
-            <div
-                style="margin-top: 20px; padding: 12px; background: rgba(78, 205, 196, 0.1); border-radius: 8px; font-size: 12px;">
-                <div style="color: #4ECDC4; font-weight: 600;">📊 25개 구 예상</div>
-                <div style="color: rgba(255,255,255,0.6); margin-top: 6px;">
-                    카카오: ~5,000회 (5%)<br>
-                    서울시: ~50회 (0.5%)<br>
-                    <span style="color: #4ECDC4;">💵 예상 비용: ₩0</span>
-                </div>
-            </div>
-        </div>
 
         <!-- 4분면 시각화 -->
         <div class="panel panel-map">
@@ -632,26 +598,26 @@
             </div>
         </div>
 
-        <!-- 데이터 품질 -->
+        <!-- 데이터 품질 및 성능 -->
         <div class="panel">
-            <div class="panel-title">🔍 데이터 품질</div>
+            <div class="panel-title">📈 수집 성능</div>
 
             <div class="quality-grid">
                 <div class="quality-item">
-                    <div class="quality-value" id="duplicateRate">0%</div>
-                    <div class="quality-label">중복 제거율</div>
+                    <div class="quality-value" id="collectionSpeed">0</div>
+                    <div class="quality-label">건/초</div>
                 </div>
                 <div class="quality-item">
-                    <div class="quality-value" id="coordMissing">0개</div>
-                    <div class="quality-label">좌표 누락</div>
+                    <div class="quality-value" id="etaTime">--:--</div>
+                    <div class="quality-label">예상 완료</div>
                 </div>
                 <div class="quality-item">
                     <div class="quality-value" id="totalData">0개</div>
                     <div class="quality-label">총 데이터</div>
                 </div>
                 <div class="quality-item">
-                    <div class="quality-value" id="coordAccuracy">±0m</div>
-                    <div class="quality-label">좌표 오차</div>
+                    <div class="quality-value" id="apiErrors">0</div>
+                    <div class="quality-label">API 에러</div>
                 </div>
             </div>
         </div>
@@ -857,12 +823,7 @@
             });
             document.getElementById('totalRecords').textContent = totalRecords;
 
-            // API 비용
-            document.getElementById('kakaoApiCount').textContent = `${apiCalls.kakao || 0} / 100,000`;
-            document.getElementById('seoulApiCount').textContent = `${apiCalls.seoul || 0} / 10,000`;
-            document.getElementById('daisoApiCount').textContent = `${apiCalls.daiso || 0}회`;
-            document.getElementById('kakaoApiBar').style.width = `${(apiCalls.kakao || 0) / 1000}%`;
-            document.getElementById('seoulApiBar').style.width = `${(apiCalls.seoul || 0) / 100}%`;
+
 
             // 교차 검증
             const cv = metrics.cross_validation || {};
@@ -872,12 +833,25 @@
             document.getElementById('addressMatch').textContent = `${cv.tobacco_match || 0}개`;
             document.getElementById('coordMatch').textContent = `${cv.csv_match || 0}개`;
 
-            // 데이터 품질
+            // 수집 성능
             const dq = metrics.data_quality || {};
-            document.getElementById('duplicateRate').textContent = '100%';
-            document.getElementById('coordMissing').textContent = `${dq.coords_missing || 0}개`;
-            document.getElementById('totalData').textContent = `${dq.total_records || 0}개`;
-            document.getElementById('coordAccuracy').textContent = `±${dq.coord_accuracy_avg || 0}m`;
+            const totalRecs = dq.total_records || 0;
+            const speed = elapsed > 0 ? (totalRecs / elapsed).toFixed(1) : 0;
+            document.getElementById('collectionSpeed').textContent = speed;
+            document.getElementById('totalData').textContent = `${totalRecs}개`;
+            document.getElementById('apiErrors').textContent = metrics.api_errors || 0;
+            // ETA 계산
+            const progress = data.progress || 0;
+            if (progress > 0 && progress < 100 && elapsed > 0) {
+                const etaSec = Math.round((elapsed / progress) * (100 - progress));
+                const etaMin = Math.floor(etaSec / 60);
+                const etaSecRem = etaSec % 60;
+                document.getElementById('etaTime').textContent = `${String(etaMin).padStart(2, '0')}:${String(etaSecRem).padStart(2, '0')}`;
+            } else if (progress >= 100) {
+                document.getElementById('etaTime').textContent = '완료';
+            } else {
+                document.getElementById('etaTime').textContent = '--:--';
+            }
 
             // 로그
             const logs = metrics.logs || [];

@@ -466,7 +466,7 @@ def run_collection_task(target_gu):
         collection_status['metrics']['stages']['closure']['status'] = 'running'
         add_log(f'[5/5] 폐업 검증 시작 (교차 검증)', 'INFO')
         
-        call_command('check_store_closure', gu=target_gu)
+        call_command('check_store_closure', gu=target_gu, clear=True)
         
         # 교차 검증 결과 수집
         closure_results = StoreClosureResult.objects.filter(gu=target_gu)

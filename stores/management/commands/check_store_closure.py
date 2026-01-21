@@ -118,6 +118,12 @@ class Command(BaseCommand):
             action='store_true',
             help='DB 저장 안함'
         )
+        parser.add_argument(
+            '--clear',
+            action='store_true',
+            default=False,
+            help='실행 전 해당 구의 기존 데이터 삭제'
+        )
 
     def handle(self, *args, **options):
         target_gu = options['gu']
@@ -127,6 +133,11 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("=" * 70))
         self.stdout.write(self.style.SUCCESS(f"🔍 {target_gu} 폐업 매장 체크 프로그램"))
         self.stdout.write(self.style.SUCCESS("=" * 70))
+
+        # 기존 데이터 삭제
+        if options['clear']:
+            deleted_count, _ = StoreClosureResult.objects.filter(gu=target_gu).delete()
+            self.stdout.write(self.style.WARNING(f"\n🧹 기존 {target_gu} 데이터 {deleted_count}건 삭제 완료"))
         
         # ========================================
         # 1단계: 카카오 API 편의점 데이터 로드 (기준 데이터) - 해당 구만
