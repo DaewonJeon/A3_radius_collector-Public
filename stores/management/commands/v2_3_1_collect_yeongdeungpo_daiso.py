@@ -163,7 +163,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  서울 지역 {len(stores)}개 매장 대상")
         
         collected_count = 0
-        補完_count = 0
+        sertify_count = 0
         failed_count = 0
         
         for store in stores:
@@ -186,7 +186,7 @@ class Command(BaseCommand):
                         lat = coords['lat']
                         lng = coords['lng']
                         self.stdout.write(self.style.SUCCESS(f"  ✅ 좌표 보완 성공: ({lat}, {lng})"))
-                        補完_count += 1
+                        sertify_count += 1
                     else:
                         self.stdout.write(self.style.ERROR(f"  ❌ 좌표 보완 실패"))
                         failed_count += 1
@@ -225,7 +225,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("📊 수집 결과"))
         self.stdout.write("=" * 60)
         self.stdout.write(f"  ✅ 수집 성공: {collected_count}개")
-        self.stdout.write(f"  🔧 카카오 보완: {補完_count}개")
+        self.stdout.write(f"  🔧 카카오 보완: {sertify_count}개")
         self.stdout.write(f"  ❌ 실패: {failed_count}개")
         
         total_in_db = YeongdeungpoDaiso.objects.count()

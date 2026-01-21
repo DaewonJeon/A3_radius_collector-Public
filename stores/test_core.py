@@ -53,7 +53,7 @@ from stores.management.commands.gu_codes import (
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 📊 API 호출 추적기 (테스트용)
+# 🔺 API 호출 추적기 (테스트용)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class APICallTracker:
@@ -106,7 +106,7 @@ class APICallTracker:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🧪 테스트 1: 확장성 테스트
+# 🔺 테스트 1: 확장성 테스트
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ScalabilityTests(TestCase):
@@ -145,7 +145,7 @@ class ScalabilityTests(TestCase):
         for gu in expected_gus:
             self.assertIn(gu, actual_gus, f"{gu} 누락됨")
         
-        print("    ✅ 25개 구 코드 매핑 완료 확인")
+        print("    🔹 25개 구 코드 매핑 완료 확인")
     
     def test_2_all_gu_have_valid_api_codes(self):
         """[확장성 2/5] 모든 구의 API 서비스명 유효성 검증"""
@@ -169,9 +169,9 @@ class ScalabilityTests(TestCase):
                 invalid_gus.append((gu, 'error', str(e)))
         
         if invalid_gus:
-            print(f"    ❌ 유효하지 않은 구: {invalid_gus}")
+            print(f"    🔺 유효하지 않은 구: {invalid_gus}")
         else:
-            print("    ✅ 모든 25개 구의 API 서비스명 유효")
+            print("    🔹 모든 25개 구의 API 서비스명 유효")
         
         self.assertEqual(len(invalid_gus), 0, f"유효하지 않은 구 발견: {invalid_gus}")
     
@@ -224,12 +224,12 @@ class ScalabilityTests(TestCase):
         self.assertEqual(total_daiso, 9, f"총 다이소 수 불일치: {total_daiso}")
         self.assertEqual(total_conv, 15, f"총 편의점 수 불일치: {total_conv}")
         
-        print("    ✅ 다른 구 데이터 시뮬레이션 및 격리 검증 완료")
+        print("    🔹 다른 구 데이터 시뮬레이션 및 격리 검증 완료")
     
     def test_4_boundary_address_validation(self):
         """[확장성 4/5] 서울 25개 구 실제 다이소 기반 최적 반경 산출"""
         print("\n[TEST 4/5] 서울 25개 구 실제 다이소 기반 최적 반경 산출")
-        print("    📡 다이소 공식 API에서 실제 매장 데이터 수집 후 분석")
+        print("     다이소 공식 API에서 실제 매장 데이터 수집 후 분석")
         
         from django.contrib.gis.geos import Polygon
         from pyproj import Transformer
@@ -705,7 +705,7 @@ class ScalabilityTests(TestCase):
                     # 서울 지역만 필터링
                     seoul_stores = [s for s in stores if '서울' in s.get('strAddr', '')]
                     locations = []
-                    kakao_補完_count = 0
+                    kakao_sertify_count = 0
                     
                     for store in seoul_stores:
                         lat = store.get('strLttd', 0) or 0
@@ -720,12 +720,12 @@ class ScalabilityTests(TestCase):
                                 if coords and coords['lat'] != 0:
                                     lat = coords['lat']
                                     lng = coords['lng']
-                                    kakao_補完_count += 1
+                                    kakao_sertify_count += 1
                         
                         if lat != 0 and lng != 0:
                             locations.append((lng, lat))
                     
-                    return locations, kakao_補完_count
+                    return locations, kakao_sertify_count
                 return [], 0
             except Exception as e:
                 print(f"        ⚠️ {gu_name} API 오류: {e}")
@@ -795,27 +795,27 @@ class ScalabilityTests(TestCase):
         # ================================================================
         # 각 구별 실제 다이소 데이터 수집 및 최소 반경 계산
         # ================================================================
-        print("\n    🔍 25개 구 다이소 데이터 수집 중 (API 호출)...")
+        print("\n     25개 구 다이소 데이터 수집 중 (API 호출)...")
         if KAKAO_API_KEY:
-            print("        📍 카카오 API 2차 검증: 활성화")
+            print("         카카오 API 2차 검증: 활성화")
         else:
-            print("        ⚠️ 카카오 API 2차 검증: 비활성화 (KAKAO_API_KEY 없음)")
+            print("         카카오 API 2차 검증: 비활성화 (KAKAO_API_KEY 없음)")
         print()
         
         results = []
         CURRENT_RADIUS = 1.3  # 현재 사용 중인 반경
-        total_kakao_補完 = 0
+        total_kakao_sertify = 0
         
         for gu_name, gu_info in SEOUL_GU_BOUNDARIES.items():
             print(f"        [{gu_name}] 수집 중...", end=" ")
             
             # 실제 다이소 API에서 데이터 가져오기 (카카오 2차 검증 포함)
-            daiso_locations, kakao_補完_count = fetch_daiso_from_api(gu_name)
-            total_kakao_補完 += kakao_補完_count
+            daiso_locations, kakao_sertify_count = fetch_daiso_from_api(gu_name)
+            total_kakao_sertify += kakao_sertify_count
             time.sleep(0.3)  # API 호출 제한 방지
             
             if not daiso_locations:
-                print(f"❌ 데이터 없음")
+                print(f"X 데이터 없음")
                 continue
             
             # 최소 반경 계산
@@ -834,17 +834,17 @@ class ScalabilityTests(TestCase):
                 'boundary_area': boundary_area,
                 'min_radius_km': min_radius,
                 'current_coverage': current_coverage,
-                'kakao_補完': kakao_補完_count,
+                'kakao_sertify': kakao_sertify_count,
             })
             
-            kakao_info = f" (카카오보완: {kakao_補完_count})" if kakao_補完_count > 0 else ""
-            print(f"✅ 다이소 {len(daiso_locations)}개{kakao_info}, 최소반경 {min_radius:.2f}km")
+            kakao_info = f" (카카오보완: {kakao_sertify_count})" if kakao_sertify_count > 0 else ""
+            print(f"🔹 다이소 {len(daiso_locations)}개{kakao_info}, 최소반경 {min_radius:.2f}km")
         
         # ================================================================
         # 결과 분석 및 출력
         # ================================================================
         if not results:
-            print("\n    ❌ 데이터 수집 실패 - API 연결 문제")
+            print("\n    X 데이터 수집 실패 - API 연결 문제")
             self.skipTest("다이소 API 연결 실패")
             return
         
@@ -873,27 +873,27 @@ class ScalabilityTests(TestCase):
         passed_70 = sum(1 for r in results if r['current_coverage'] >= 70)
         
         print(f"\n    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print(f"    📊 100% 커버리지 최소 반경 통계 (실제 다이소 기반)")
+        print(f"     100% 커버리지 최소 반경 통계 (실제 다이소 기반)")
         print(f"    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print(f"        📈 평균 (Mean):     {mean_radius:.3f} km")
-        print(f"        📊 중앙값 (Median): {median_radius:.3f} km")
+        print(f"        🔹 평균 (Mean):     {mean_radius:.3f} km")
+        print(f"        🔹 중앙값 (Median): {median_radius:.3f} km")
         print(f"        🔻 최솟값 (Min):    {min_r:.3f} km")
         print(f"        🔺 최댓값 (Max):    {max_r:.3f} km")
-        print(f"        📉 표준편차 (Std):  {stdev_radius:.3f} km")
+        print(f"        🔹 표준편차 (Std):  {stdev_radius:.3f} km")
         print(f"    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         
-        print(f"\n    🎯 현재 수집 반경: {CURRENT_RADIUS} km")
+        print(f"\n    🔹 현재 수집 반경: {CURRENT_RADIUS} km")
         print(f"        → 평균 대비: {((CURRENT_RADIUS / mean_radius) * 100):.1f}%")
         print(f"        → 중앙값 대비: {((CURRENT_RADIUS / median_radius) * 100):.1f}%")
         
         print(f"\n    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print(f"    📋 결론: RADIUS_KM = {CURRENT_RADIUS}km 의 근거")
+        print(f"     결론: RADIUS_KM = {CURRENT_RADIUS}km 의 근거")
         print(f"    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print(f"        1. 실제 다이소 기반 100% 커버리지 최소 반경")
         print(f"           - 평균: {mean_radius:.3f}km, 중앙값: {median_radius:.3f}km")
         print(f"        2. 총 수집된 다이소: {total_daiso}개 ({len(results)}개 구)")
-        if total_kakao_補完 > 0:
-            print(f"           - 카카오 API 보완: {total_kakao_補完}개")
+        if total_kakao_sertify > 0:
+            print(f"           - 카카오 API 보완: {total_kakao_sertify}개")
         print(f"        3. 현재 반경({CURRENT_RADIUS}km) 평균 커버리지: {avg_coverage:.1f}%")
         print(f"        4. 70% 이상 커버: {passed_70}/{len(results)}개 구")
         
@@ -909,14 +909,14 @@ class ScalabilityTests(TestCase):
         
         # 1개 구 예상
         est_1 = tracker.estimate_for_gu_count(1)
-        print(f"\n    📊 1개 구 수집 시 예상:")
+        print(f"\n    🔹 1개 구 수집 시 예상:")
         print(f"        카카오 REST API: ~{est_1['kakao_rest']}회")
         print(f"        서울시 OpenAPI (휴게): {est_1['seoul_restaurant']}회")
         print(f"        서울시 OpenAPI (담배): {est_1['seoul_tobacco']}회")
         
         # 25개 구 예상
         est_25 = tracker.estimate_for_gu_count(25)
-        print(f"\n    📊 25개 구 수집 시 예상:")
+        print(f"\n    🔹 25개 구 수집 시 예상:")
         print(f"        카카오 REST API: ~{est_25['kakao_rest']}회 (일 한도의 {est_25['kakao_rest']/100000*100:.1f}%)")
         print(f"        서울시 OpenAPI (휴게): {est_25['seoul_restaurant']}회")
         print(f"        서울시 OpenAPI (담배): {est_25['seoul_tobacco']}회")
@@ -926,11 +926,11 @@ class ScalabilityTests(TestCase):
         self.assertLess(est_25['kakao_rest'], 100000, "카카오 API 일일 한도 초과 예상")
         self.assertLess(est_25['seoul_restaurant'] + est_25['seoul_tobacco'], 10000, "서울시 API 일일 한도 초과 예상")
         
-        print("\n    ✅ 전체 25개 구 수집도 일일 한도 내 (과금 없음)")
+        print("\n    🔹 전체 25개 구 수집도 일일 한도 내 (과금 없음)")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🧪 테스트 2: E2E 통합 테스트
+#  테스트 2: E2E 통합 테스트
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class EndToEndIntegrationTests(TestCase):
@@ -945,7 +945,7 @@ class EndToEndIntegrationTests(TestCase):
         self.target_gu = '영등포구'
         self.tracker = APICallTracker()
         print("\n" + "="*70)
-        print("🧪 E2E 통합 테스트 시작")
+        print(" E2E 통합 테스트 시작")
         print("="*70)
     
     def test_1_pipeline_stage_order(self):
@@ -966,7 +966,7 @@ class EndToEndIntegrationTests(TestCase):
         
         # run_all.py의 순서와 일치하는지 확인
         self.assertEqual(len(expected_stages), 5)
-        print("    ✅ 파이프라인 5단계 순서 확인 완료")
+        print("     파이프라인 5단계 순서 확인 완료")
     
     def test_2_simulated_daiso_collection(self):
         """[E2E 2/5] 다이소 수집 시뮬레이션"""
@@ -991,7 +991,7 @@ class EndToEndIntegrationTests(TestCase):
         
         self.assertEqual(count, 16)
         self.tracker.track('kakao_rest', 1)  # 다이소 API는 1회
-        print("    ✅ 다이소 수집 시뮬레이션 성공")
+        print("     다이소 수집 시뮬레이션 성공")
     
     def test_3_simulated_convenience_collection(self):
         """[E2E 3/5] 편의점 수집 시뮬레이션 (API 호출 추적 포함)"""
@@ -1042,7 +1042,7 @@ class EndToEndIntegrationTests(TestCase):
         print(f"    소요 시간: {elapsed:.3f}초")
         
         self.assertGreater(count, 0)
-        print("    ✅ 편의점 수집 시뮬레이션 성공")
+        print("    🔹 편의점 수집 시뮬레이션 성공")
     
     def test_4_simulated_openapi_collection(self):
         """[E2E 4/5] OpenAPI 수집 시뮬레이션"""
@@ -1087,7 +1087,7 @@ class EndToEndIntegrationTests(TestCase):
         print(f"    서울시 OpenAPI 호출: 각 1회")
         print(f"    소요 시간: {elapsed:.3f}초")
         
-        print("    ✅ OpenAPI 수집 시뮬레이션 성공")
+        print("    🔹 OpenAPI 수집 시뮬레이션 성공")
     
     def test_5_data_consistency_check(self):
         """[E2E 5/5] 데이터 일관성 검증"""
@@ -1133,15 +1133,15 @@ class EndToEndIntegrationTests(TestCase):
         
         # API 호출 통계 출력
         stats = self.tracker.get_statistics()
-        print(f"\n    📊 API 호출 통계:")
+        print(f"\n    🔹 API 호출 통계:")
         print(f"        카카오: {stats['daily_usage']['kakao']}")
         print(f"        서울시: {stats['daily_usage']['seoul']}")
         
-        print("    ✅ 데이터 일관성 검증 완료")
+        print("    🔹 데이터 일관성 검증 완료")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🧪 테스트 3: Docker 재현성 테스트
+#  테스트 3: Docker 재현성 테스트
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class DockerReproducibilityTests(TestCase):
@@ -1153,7 +1153,7 @@ class DockerReproducibilityTests(TestCase):
     
     def setUp(self):
         print("\n" + "="*70)
-        print("🧪 Docker 재현성 테스트 시작")
+        print(" Docker 재현성 테스트 시작")
         print("="*70)
     
     def test_1_required_environment_variables(self):
@@ -1179,16 +1179,16 @@ class DockerReproducibilityTests(TestCase):
         
         print("    환경 변수 현황:")
         for var, masked in present_vars:
-            print(f"        ✅ {var}: {masked}")
+            print(f"         {var}: {masked}")
         for var, desc in missing_vars:
-            print(f"        ⚠️ {var}: 미설정 ({desc})")
+            print(f"         {var}: 미설정 ({desc})")
         
         # 테스트 환경이므로 경고만 (CI/CD에서는 설정됨)
         if missing_vars:
-            print(f"\n    ℹ️ 테스트 환경에서는 환경 변수가 없을 수 있습니다.")
+            print(f"\n     테스트 환경에서는 환경 변수가 없을 수 있습니다.")
             print(f"       실제 Docker 환경에서는 .env 파일로 설정됩니다.")
         
-        print("    ✅ 환경 변수 확인 완료")
+        print("    🔹 환경 변수 확인 완료")
     
     def test_2_required_dependencies(self):
         """[Docker 2/4] 필수 의존성 패키지 확인"""
@@ -1206,15 +1206,15 @@ class DockerReproducibilityTests(TestCase):
                 if '.' in package:
                     # Django 앱의 경우
                     from django.apps import apps
-                    print(f"        ✅ {package}: 사용 가능")
+                    print(f"         {package}: 사용 가능")
                 else:
                     __import__(package)
-                    print(f"        ✅ {package}: 설치됨")
+                    print(f"         {package}: 설치됨")
             except ImportError:
-                print(f"        ❌ {package}: 미설치 ({desc})")
+                print(f"         X {package}: 미설치 ({desc})")
                 self.fail(f"{package} 패키지가 필요합니다")
         
-        print("    ✅ 모든 필수 의존성 확인 완료")
+        print("    🔹 모든 필수 의존성 확인 완료")
     
     def test_3_database_connection(self):
         """[Docker 3/4] 데이터베이스 연결 확인"""
@@ -1226,7 +1226,7 @@ class DockerReproducibilityTests(TestCase):
                 cursor.execute("SELECT 1")
                 result = cursor.fetchone()
             
-            print(f"        DB 연결: ✅ 성공")
+            print(f"        DB 연결: 🔹 성공")
             print(f"        DB 엔진: {connection.vendor}")
             
             # PostGIS 확인
@@ -1234,15 +1234,15 @@ class DockerReproducibilityTests(TestCase):
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT PostGIS_version();")
                     postgis_version = cursor.fetchone()[0]
-                print(f"        PostGIS: ✅ {postgis_version}")
+                print(f"        PostGIS: 🔹 {postgis_version}")
             
             self.assertEqual(result[0], 1)
             
         except Exception as e:
-            print(f"        ❌ DB 연결 실패: {e}")
+            print(f"        X DB 연결 실패: {e}")
             self.fail(f"데이터베이스 연결 실패: {e}")
         
-        print("    ✅ 데이터베이스 연결 확인 완료")
+        print("    🔹 데이터베이스 연결 확인 완료")
     
     def test_4_model_migrations(self):
         """[Docker 4/4] 모델 마이그레이션 상태 확인"""
@@ -1260,16 +1260,16 @@ class DockerReproducibilityTests(TestCase):
             try:
                 # 테이블 존재 확인 (count 쿼리)
                 count = model.objects.count()
-                print(f"        ✅ {model.__name__}: 테이블 존재 (현재 {count}개 레코드)")
+                print(f"        🔹 {model.__name__}: 테이블 존재 (현재 {count}개 레코드)")
             except Exception as e:
-                print(f"        ❌ {model.__name__}: 테이블 없음 - 마이그레이션 필요")
+                print(f"        X {model.__name__}: 테이블 없음 - 마이그레이션 필요")
                 self.fail(f"{model.__name__} 테이블이 없습니다. 마이그레이션을 실행하세요.")
         
-        print("    ✅ 모든 모델 마이그레이션 확인 완료")
+        print("    🔹 모든 모델 마이그레이션 확인 완료")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 📊 테스트 결과 요약 출력 (커스텀 TestRunner)
+#  테스트 결과 요약 출력 (커스텀 TestRunner)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # 테스트 결과 추적용 전역 변수
@@ -1291,16 +1291,16 @@ class TestResultSummary(TestCase):
         # 만약 이전 테스트가 실패했다면 이 테스트까지 도달하지 못함
         
         categories = [
-            ('확장성 테스트', 5, '✅ 모두 통과'),
-            ('E2E 통합 테스트', 5, '✅ 모두 통과'),
-            ('Docker 재현성 테스트', 4, '✅ 모두 통과'),
+            ('확장성 테스트', 5, '🔹 모두 통과'),
+            ('E2E 통합 테스트', 5, '🔹 모두 통과'),
+            ('Docker 재현성 테스트', 4, '🔹 모두 통과'),
         ]
         
         total_tests = sum(c[1] for c in categories)
         
         print("\n")
         print("=" * 70)
-        print("📊 테스트 결과 요약")
+        print(" 테스트 결과 요약")
         print("=" * 70)
         print()
         
@@ -1314,16 +1314,16 @@ class TestResultSummary(TestCase):
             print("│ {:<28} │ {:^10} │ {:^18} │".format(name, f"{count}개", result))
         
         print("├" + "─" * 30 + "┴" + "─" * 12 + "┴" + "─" * 20 + "┤")
-        print("│ {:<63} │".format(f"📈 총 테스트: {total_tests}개 | 전체 결과: ✅ 모두 통과"))
+        print("│ {:<63} │".format(f" 총 테스트: {total_tests}개 | 전체 결과: 🔹 모두 통과"))
         print("└" + "─" * 65 + "┘")
         
         print()
         print("─" * 70)
-        print("💰 API 비용 분석")
+        print("How much__API 비용 분석")
         print("─" * 70)
-        print("  • 카카오 REST API : 일 100,000건 무료 → 25개 구 수집 시 5% 사용")
-        print("  • 서울시 OpenAPI  : 일 10,000회 무료 → 25개 구 수집 시 0.5% 사용")
-        print("  • 결론           : 전체 구 수집도 ✅ 무료 범위 내!")
+        print("  🔹 카카오 REST API : 일 100,000건 무료 → 25개 구 수집 시 5% 사용")
+        print("  🔹 서울시 OpenAPI  : 일 10,000회 무료 → 25개 구 수집 시 0.5% 사용")
+        print("  🔹 결론           : 전체 구 수집도 🔹 무료 범위 내!")
         print("─" * 70)
         
         print()
