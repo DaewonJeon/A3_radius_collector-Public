@@ -196,19 +196,21 @@ class Command(BaseCommand):
                     failed_count += 1
                     continue
             
-            # DB 저장
+            # DB 저장 (Race Condition 방지: transaction.atomic 사용)
             try:
+                from django.db import transaction
                 point = Point(lng, lat)
                 
-                obj, created = YeongdeungpoDaiso.objects.update_or_create(
-                    daiso_id=store_code,  # 다이소 매장코드를 ID로 사용
-                    defaults={
-                        'name': f"다이소 {name}",
-                        'address': address,
-                        'location': point,
-                        'gu': target_gu,  # 구 정보 저장
-                    }
-                )
+                with transaction.atomic():
+                    obj, created = YeongdeungpoDaiso.objects.select_for_update().update_or_create(
+                        daiso_id=store_code,  # 다이소 매장코드를 ID로 사용
+                        defaults={
+                            'name': f"다이소 {name}",
+                            'address': address,
+                            'location': point,
+                            'gu': target_gu,  # 구 정보 저장
+                        }
+                    )
                 
                 action = "생성" if created else "업데이트"
                 self.stdout.write(f"  ✅ [{name}] {action} | 좌표: ({lat:.4f}, {lng:.4f})")

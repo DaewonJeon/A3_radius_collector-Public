@@ -163,7 +163,8 @@ class Command(BaseCommand):
             return []
 
     def save_to_db(self, stores, target_gu):
-        """DB에 저장 (update_or_create 사용)"""
+        """DB에 저장 (update_or_create 사용, Race Condition 방지)"""
+        from django.db import transaction
         saved_count = 0
         updated_count = 0
         
@@ -224,10 +225,12 @@ class Command(BaseCommand):
                 'mwsrnm': store.get('MWSRNM', ''),
             }
             
-            obj, created = TobaccoRetailLicense.objects.update_or_create(
-                mgtno=mgtno,
-                defaults=defaults
-            )
+            # Race Condition 방지: transaction.atomic + select_for_update
+            with transaction.atomic():
+                obj, created = TobaccoRetailLicense.objects.select_for_update().update_or_create(
+                    mgtno=mgtno,
+                    defaults=defaults
+                )
             
             if created:
                 saved_count += 1

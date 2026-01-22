@@ -326,6 +326,7 @@ class Command(BaseCommand):
         # DB 저장
         save_db = options['save_db'] and not options['no_save_db']
         if save_db:
+            from django.db import transaction
             self.stdout.write("\n💾 [5단계] DB 저장 중...")
             new_count = 0
             update_count = 0
@@ -335,19 +336,21 @@ class Command(BaseCommand):
                 lng = r['경도']
                 location = Point(lng, lat, srid=4326) if lat and lng else None
                 
-                obj, created = StoreClosureResult.objects.update_or_create(
-                    place_id=r['place_id'],
-                    defaults={
-                        'name': r['이름'],
-                        'address': r['주소'],
-                        'gu': target_gu,  # 구 정보 저장
-                        'latitude': lat,
-                        'longitude': lng,
-                        'location': location,
-                        'status': r['상태'],
-                        'match_reason': r['매칭이유'],
-                    }
-                )
+                # Race Condition 방지: transaction.atomic + select_for_update
+                with transaction.atomic():
+                    obj, created = StoreClosureResult.objects.select_for_update().update_or_create(
+                        place_id=r['place_id'],
+                        defaults={
+                            'name': r['이름'],
+                            'address': r['주소'],
+                            'gu': target_gu,  # 구 정보 저장
+                            'latitude': lat,
+                            'longitude': lng,
+                            'location': location,
+                            'status': r['상태'],
+                            'match_reason': r['매칭이유'],
+                        }
+                    )
                 if created:
                     new_count += 1
                 else:

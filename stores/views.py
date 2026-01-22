@@ -4,18 +4,19 @@ from .models import NearbyStore
 import json
 
 def map_view(request):
-    # 1. DB에서 데이터 가져오기
-    stores = NearbyStore.objects.all()
+    # 1. DB에서 데이터 가져오기 (N+1 방지: values() 사용)
+    stores = NearbyStore.objects.values('name', 'category', 'location')
 
     # 2. JSON 변환을 위한 리스트 만들기
     stores_list = []
     for store in stores:
-        stores_list.append({
-            'name': store.name,
-            'lat': store.location.y,  # PointField에서 위도 추출
-            'lng': store.location.x,  # PointField에서 경도 추출
-            'category': store.category,
-        })
+        if store['location']:
+            stores_list.append({
+                'name': store['name'],
+                'lat': store['location'].y,  # PointField에서 위도 추출
+                'lng': store['location'].x,  # PointField에서 경도 추출
+                'category': store['category'],
+            })
 
     # 3. 데이터 포장
     context = {
@@ -77,24 +78,26 @@ def store_closure_map_view(request):
     normal_count = 0
     closed_count = 0
     
-    # DB에서 데이터 읽기
-    closure_results = StoreClosureResult.objects.all()
+    # DB에서 데이터 읽기 (N+1 방지: values() 사용으로 필요한 필드만 조회)
+    closure_results = StoreClosureResult.objects.values(
+        'name', 'address', 'latitude', 'longitude', 'status', 'match_reason'
+    )
     
     for store in closure_results:
-        if store.latitude and store.longitude:
-            status = store.status
+        if store['latitude'] and store['longitude']:
+            status = store['status']
             if status == '정상':
                 normal_count += 1
             else:
                 closed_count += 1
                 
             stores_list.append({
-                'name': store.name,
-                'address': store.address,
-                'lat': float(store.latitude),
-                'lng': float(store.longitude),
+                'name': store['name'],
+                'address': store['address'],
+                'lat': float(store['latitude']),
+                'lng': float(store['longitude']),
                 'status': status,
-                'match_reason': store.match_reason
+                'match_reason': store['match_reason']
             })
     
     context = {
@@ -349,20 +352,23 @@ def run_collection_task(target_gu):
         collection_status['progress'] = 20
         add_log(f'✅ 다이소 {daiso_count}개 수집 완료 ({stage_time}초)', 'INFO')
         
+        # 수집된 다이소 지점 목록 (N+1 방지: values() 사용으로 한 번만 조회)
+        daiso_data = list(YeongdeungpoDaiso.objects.filter(gu=target_gu).values('name', 'location'))
+        
         # 수집된 다이소 지점 목록 로그
-        for daiso in YeongdeungpoDaiso.objects.filter(gu=target_gu):
-            add_log(f'  📍 {daiso.name}', 'INFO')
+        for daiso in daiso_data:
+            add_log(f'  📍 {daiso["name"]}', 'INFO')
         
         update_elapsed_time()
         
-        # 4분면 좌표 데이터 수집
+        # 4분면 좌표 데이터 수집 (위에서 조회한 데이터 재사용)
         quadrants_data = []
-        for daiso in YeongdeungpoDaiso.objects.filter(gu=target_gu):
-            if daiso.location:
-                cx, cy = daiso.location.x, daiso.location.y
-                DELTA_LAT, DELTA_LNG = 0.0117, 0.0147
+        DELTA_LAT, DELTA_LNG = 0.0117, 0.0147
+        for daiso in daiso_data:
+            if daiso['location']:
+                cx, cy = daiso['location'].x, daiso['location'].y
                 quadrants_data.append({
-                    'name': daiso.name,
+                    'name': daiso['name'],
                     'center': {'lat': cy, 'lng': cx},
                     'quadrants': [
                         {'name': 'NE', 'bounds': [[cy, cx], [cy + DELTA_LAT, cx + DELTA_LNG]]},
@@ -537,21 +543,25 @@ def get_results(request):
     from .models import StoreClosureResult
     
     target_gu = collection_status.get('target_gu', '영등포구')
-    stores_list = []
     
-    # DB에서 데이터 읽기 (target_gu 필터)
-    closure_results = StoreClosureResult.objects.filter(gu=target_gu)
+    # DB에서 데이터 읽기 (N+1 방지: values() 사용으로 필요한 필드만 조회)
+    closure_results = StoreClosureResult.objects.filter(gu=target_gu).values(
+        'name', 'address', 'latitude', 'longitude', 'status', 'match_reason'
+    )
     
-    for store in closure_results:
-        if store.latitude and store.longitude:
-            stores_list.append({
-                'name': store.name,
-                'address': store.address,
-                'lat': float(store.latitude),
-                'lng': float(store.longitude),
-                'status': store.status,
-                'match_reason': store.match_reason
-            })
+    # 리스트 컴프리헨션으로 한 번에 처리
+    stores_list = [
+        {
+            'name': store['name'],
+            'address': store['address'],
+            'lat': float(store['latitude']),
+            'lng': float(store['longitude']),
+            'status': store['status'],
+            'match_reason': store['match_reason']
+        }
+        for store in closure_results
+        if store['latitude'] and store['longitude']
+    ]
     
     return JsonResponse({
         'stores': stores_list,

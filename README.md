@@ -197,7 +197,7 @@ results = StoreClosureResult.objects.values('name', 'address', 'lat', 'lng', 'gu
 
 ### 5. Race Condition 방지 ⭐⭐⭐
 
-**문제**: 동시 수집 요청 시 `IntegrityError` 발생
+**문제**: (비동기상황) 확장 대비 & 동시 수집 요청 시 `IntegrityError` 발생
 
 **해결**: `select_for_update()` 트랜잭션 락 사용
 ```python
@@ -316,7 +316,7 @@ docker compose exec web python manage.py test stores.test_core -v 2
 - 비동기 처리 도입 (Celery + Redis)
 
 ### High Priority
-- 25개 구 병렬 수집 지원 (현재 순차 실행 125분 소요)
+- 25개 구 병렬 수집 지원 (현재 순차 실행 22분 소요)
 - 에러 복구 로직 (체크포인트 기반 재시작)
 - API 모킹 테스트 (CI/CD 파이프라인 지원)
 
@@ -335,7 +335,7 @@ docker compose exec web python manage.py test stores.test_core -v 2
 ### v1.0 — MVP: 데이터 수집기
 - 카카오 API로 다이소 주변 상권 데이터 수집
 - Rate Limit 준수 (`time.sleep(0.2)`)
-- **한계**: API 45개 제한 미인지
+- **한계**: API 45개 제한 미인지 (45개 초과해서 수집 불가🔺)
 
 ### v1.1 — 안정성 강화
 - `update_or_create()` Upsert 로직 도입
@@ -349,8 +349,8 @@ docker compose exec web python manage.py test stores.test_core -v 2
 
 ### v2.1 — BigQuery 실험 (실패 → 교훈)
 - Google BigQuery + OSM 데이터 시도
-- 서울 다이소: 실제 260개 vs OSM 60개 (75% 누락)
-- **교훈**: "도구의 화려함보다 데이터의 정확도가 중요하다"
+- 서울 다이소: (카카오, 네이버)지도 250개 vs OSM지도 60개 (75% 누락)
+- **교훈**: "구글의 범용성보다 데이터의 정확도가 중요하다"
 
 ### v2.3 — 최종 완성: 3중 검증 시스템 ✅
 - 다이소 공식 API 리버스 엔지니어링

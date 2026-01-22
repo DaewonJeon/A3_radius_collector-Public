@@ -173,19 +173,21 @@ class Command(BaseCommand):
                                 point = Point(lng, lat)
                                 dist = int(item.get('distance', 0))
                                 
-                                # place_id 기준 중복 방지
-                                YeongdeungpoConvenience.objects.update_or_create(
-                                    place_id=item.get('id'),
-                                    defaults={
-                                        'name': item.get('place_name'),
-                                        'address': address,
-                                        'phone': item.get('phone'),
-                                        'location': point,
-                                        'distance': dist,
-                                        'base_daiso': daiso.name,
-                                        'gu': target_gu,  # 구 정보 저장
-                                    }
-                                )
+                                # place_id 기준 중복 방지 (Race Condition 방지: transaction.atomic 사용)
+                                from django.db import transaction
+                                with transaction.atomic():
+                                    YeongdeungpoConvenience.objects.select_for_update().update_or_create(
+                                        place_id=item.get('id'),
+                                        defaults={
+                                            'name': item.get('place_name'),
+                                            'address': address,
+                                            'phone': item.get('phone'),
+                                            'location': point,
+                                            'distance': dist,
+                                            'base_daiso': daiso.name,
+                                            'gu': target_gu,  # 구 정보 저장
+                                        }
+                                    )
                                 stored_count += 1
                             except Exception as e:
                                 self.stdout.write(self.style.ERROR(f"저장 실패: {e}"))
