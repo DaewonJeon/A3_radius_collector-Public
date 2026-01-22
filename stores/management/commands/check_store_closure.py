@@ -124,6 +124,12 @@ class Command(BaseCommand):
             default=False,
             help='실행 전 해당 구의 기존 데이터 삭제'
         )
+        parser.add_argument(
+            '--no-csv',
+            action='store_true',
+            default=False,
+            help='CSV 파일 생성 안함'
+        )
 
     def handle(self, *args, **options):
         target_gu = options['gu']
@@ -328,9 +334,10 @@ class Command(BaseCommand):
         self.stdout.write(f"  📊 전체: {len(results)}개")
         
         # CSV 저장
-        result_df = pd.DataFrame(results)
-        result_df.to_csv(output_file, index=False, encoding='utf-8-sig')
-        self.stdout.write(self.style.SUCCESS(f"\n📁 CSV 저장: {output_file}"))
+        if not options['no_csv']:
+            result_df = pd.DataFrame(results)
+            result_df.to_csv(output_file, index=False, encoding='utf-8-sig')
+            self.stdout.write(self.style.SUCCESS(f"\n📁 CSV 저장: {output_file}"))
         
         # DB 저장
         save_db = options['save_db'] and not options['no_save_db']

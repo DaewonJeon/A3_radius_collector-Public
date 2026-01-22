@@ -40,8 +40,8 @@ class Command(BaseCommand):
         parser.add_argument(
             '--radius',
             type=float,
-            default=1.3,
-            help='탐색 반경 (km, 기본: 1.3)'
+            default=1.8,
+            help='탐색 반경 (km, 이전: 1.3km >>> (상위10개)통계값 바탕: 1.8km)'
         )
 
     def is_target_gu(self, address, target_gu):
