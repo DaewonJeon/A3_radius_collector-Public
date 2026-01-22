@@ -102,12 +102,6 @@ class Command(BaseCommand):
             help='좌표 비교 시 소수점 자릿수 (기본: 4)'
         )
         parser.add_argument(
-            '--output',
-            type=str,
-            default='store_closure_result.csv',
-            help='결과 출력 파일명'
-        )
-        parser.add_argument(
             '--save-db',
             action='store_true',
             default=True,
@@ -124,17 +118,10 @@ class Command(BaseCommand):
             default=False,
             help='실행 전 해당 구의 기존 데이터 삭제'
         )
-        parser.add_argument(
-            '--no-csv',
-            action='store_true',
-            default=False,
-            help='CSV 파일 생성 안함'
-        )
 
     def handle(self, *args, **options):
         target_gu = options['gu']
         decimals = options['decimals']
-        output_file = options['output']
         
         self.stdout.write(self.style.SUCCESS("=" * 70))
         self.stdout.write(self.style.SUCCESS(f"🔍 {target_gu} 폐업 매장 체크 프로그램"))
@@ -333,11 +320,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  🔴 폐업 (카카오맵 업데이트 필요): {closed_count}개")
         self.stdout.write(f"  📊 전체: {len(results)}개")
         
-        # CSV 저장
-        if not options['no_csv']:
-            result_df = pd.DataFrame(results)
-            result_df.to_csv(output_file, index=False, encoding='utf-8-sig')
-            self.stdout.write(self.style.SUCCESS(f"\n📁 CSV 저장: {output_file}"))
+
         
         # DB 저장
         save_db = options['save_db'] and not options['no_save_db']

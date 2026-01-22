@@ -115,7 +115,7 @@ class Command(BaseCommand):
         if not options['skip_check']:
             self.stdout.write(self.style.WARNING(f"\n🔍 [5/5] {target_gu} 폐업 매장 검증..."))
             try:
-                call_command('check_store_closure', gu=target_gu, no_csv=True)
+                call_command('check_store_closure', gu=target_gu)
                 self.stdout.write(self.style.SUCCESS("  ✅ 폐업 검증 완료"))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"  ❌ 폐업 검증 실패: {e}"))
