@@ -80,7 +80,7 @@ def store_closure_map_view(request):
     
     # DB에서 데이터 읽기 (N+1 방지: values() 사용으로 필요한 필드만 조회)
     closure_results = StoreClosureResult.objects.values(
-        'name', 'address', 'latitude', 'longitude', 'status', 'match_reason'
+        'name', 'address', 'latitude', 'longitude', 'status', 'match_reason', 'gu'
     )
     
     for store in closure_results:
@@ -97,7 +97,8 @@ def store_closure_map_view(request):
                 'lat': float(store['latitude']),
                 'lng': float(store['longitude']),
                 'status': status,
-                'match_reason': store['match_reason']
+                'match_reason': store['match_reason'],
+                'gu': store['gu']
             })
     
     context = {

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 
 <head>
-    <meta charset="utf-8">
-    <title>카카오맵 폐업 매장 체크 프로그램</title>
+    <meta charset="UTF-8">
+    <title>폐업 매장 체크 - 수집 데이터 뷰어</title>
     <style>
         * {
             margin: 0;
@@ -12,67 +12,182 @@
         }
 
         body {
-            font-family: 'Malgun Gothic', sans-serif;
+            font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 사이드바 스타일 (boundary_viewer.html 참고) */
+        #sidebar {
+            width: 280px;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar h2 {
+            margin-bottom: 12px;
+            color: #00d9ff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-section {
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #333;
+        }
+
+        .filter-btn {
+            width: 100%;
+            padding: 10px 12px;
+            margin: 4px 0;
+            background: #16213e;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            background: #0f3460;
+            transform: translateX(3px);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            color: #000;
+            font-weight: 600;
+        }
+
+        .filter-btn .count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .filter-btn.active .count {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .view-all-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .view-all-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 6px;
+        }
+
+        .status-badge.normal {
+            background: #4ECDC4;
+            color: #fff;
+        }
+
+        .status-badge.closed {
+            background: #FF6B6B;
+            color: #fff;
+        }
+
+        /* 통계 정보 */
+        .stats-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stats-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-label {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .stats-value {
+            color: #00d9ff;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* 맵 영역 */
+        #map-container {
+            flex: 1;
+            position: relative;
         }
 
         #map {
             width: 100%;
-            height: 100vh;
+            height: 100%;
         }
 
+        /* 우측 상단 정보 패널 */
         .info-panel {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 15px;
+            right: 15px;
             background: rgba(255, 255, 255, 0.95);
             padding: 15px 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             z-index: 100;
-            max-width: 350px;
+            max-width: 280px;
         }
 
-        .info-panel h2 {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .info-panel p {
+        .info-panel h3 {
             font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .stats {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-
-        .stats span {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 13px;
-            margin-right: 5px;
-            margin-bottom: 5px;
-        }
-
-        .stats .normal {
-            background: linear-gradient(135deg, #4ECDC4 0%, #44a8a0 100%);
-            color: white;
-        }
-
-        .stats .closed {
-            background: linear-gradient(135deg, #FF6B6B 0%, #ee5a5a 100%);
-            color: white;
+            color: #333;
+            margin-bottom: 10px;
         }
 
         .legend {
-            margin-top: 12px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
+            margin-top: 10px;
         }
 
         .legend-item {
@@ -90,18 +205,12 @@
             margin-right: 10px;
         }
 
-        .legend-desc {
-            font-size: 11px;
-            color: #888;
-            margin-left: 24px;
-            margin-top: -4px;
-        }
-
+        /* 인포윈도우 스타일 */
         .iwContent {
-            padding: 10px 14px;
+            padding: 12px 16px;
             font-size: 13px;
             line-height: 1.5;
-            min-width: 200px;
+            min-width: 220px;
         }
 
         .iwContent .name {
@@ -114,12 +223,12 @@
         .iwContent .address {
             color: #666;
             font-size: 12px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .iwContent .status {
             display: inline-block;
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: bold;
@@ -136,99 +245,294 @@
         }
 
         .iwContent .match-reason {
-            margin-top: 6px;
+            margin-top: 8px;
             font-size: 11px;
             color: #888;
+        }
+
+        /* 현재 필터 표시 */
+        .current-filter {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid #00d9ff;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: #00d9ff;
         }
     </style>
 </head>
 
 <body>
-    <div class="info-panel">
-        <h2>🗺️ 카카오맵 폐업 매장 체크 프로그램</h2>
-        <p>카카오 API 편의점과 공공데이터 비교 결과</p>
-        <div class="stats">
-            <span class="normal">🔵 정상: {{ normal_count }}개</span>
-            <span class="closed">🔴 폐업: {{ closed_count }}개</span>
+    <!-- 사이드바 -->
+    <div id="sidebar">
+        <h2>🗺️ 수집 데이터 뷰어</h2>
+
+        <!-- 통계 패널 -->
+        <div class="stats-panel">
+            <div class="stats-row">
+                <span class="stats-label">전체 데이터</span>
+                <span class="stats-value" id="total-count">0</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">정상 영업</span>
+                <span class="stats-value" style="color: #4ECDC4;">{{ normal_count }}개</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">폐업 추정</span>
+                <span class="stats-value" style="color: #FF6B6B;">{{ closed_count }}개</span>
+            </div>
         </div>
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #4285F4;"></div>
-                정상 영업
-            </div>
-            <div class="legend-desc">공공데이터에서 확인됨</div>
-            <div class="legend-item" style="margin-top: 10px;">
-                <div class="legend-color" style="background: #EA4335;"></div>
-                폐업 추정
-            </div>
-            <div class="legend-desc">카카오맵 업데이트 필요!</div>
+
+        <!-- 전체 데이터 보기 버튼 -->
+        <button class="view-all-btn" onclick="showAll()">
+            📋 전체 데이터 보기
+        </button>
+
+        <!-- 현재 필터 표시 -->
+        <div class="current-filter" id="current-filter" style="display: none;">
+            필터: <strong id="filter-text"></strong>
+        </div>
+
+        <!-- 상태별 필터 -->
+        <div class="category-section">
+            <div class="category-title">📊 상태별 보기</div>
+            <button class="filter-btn" onclick="filterByStatus('정상')">
+                <span>🔵 정상 영업</span>
+                <span class="count" id="count-normal">0</span>
+            </button>
+            <button class="filter-btn" onclick="filterByStatus('폐업')">
+                <span>🔴 폐업 추정</span>
+                <span class="count" id="count-closed">0</span>
+            </button>
+        </div>
+
+        <!-- 지역별 필터 -->
+        <div class="category-section">
+            <div class="category-title">🏙️ 지역별 보기</div>
+            <div id="gu-list"></div>
         </div>
     </div>
 
-    <div id="map"></div>
+    <!-- 맵 컨테이너 -->
+    <div id="map-container">
+        <div id="map"></div>
+
+        <!-- 정보 패널 -->
+        <div class="info-panel">
+            <h3>📍 표시 중인 데이터</h3>
+            <div id="display-info">전체 데이터를 표시합니다.</div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4285F4;"></div>
+                    정상 영업
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #EA4335;"></div>
+                    폐업 추정
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_js_key }}"></script>
 
     <script>
         // Django에서 전달받은 데이터
-        var stores = JSON.parse('{{ stores_json|escapejs }}');
+        var allStores = JSON.parse('{{ stores_json|escapejs }}');
+        var currentMarkers = [];
+        var currentInfowindow = null;
+        var map;
 
-        // 영등포구 중심 좌표
+        // 통계 데이터 계산
+        var stats = {
+            total: allStores.length,
+            normal: allStores.filter(s => s.status === '정상').length,
+            closed: allStores.filter(s => s.status === '폐업').length,
+            matchReasons: {},
+            gus: {}
+        };
+
+        // 매칭 이유별 카운트
+        allStores.forEach(function (store) {
+            var reason = store.match_reason || '알 수 없음';
+            stats.matchReasons[reason] = (stats.matchReasons[reason] || 0) + 1;
+
+            // 구별 카운트 (추후 확장용)
+            var gu = store.gu || '미지정';
+            stats.gus[gu] = (stats.gus[gu] || 0) + 1;
+        });
+
+        // 통계 표시
+        document.getElementById('total-count').textContent = stats.total + '개';
+        document.getElementById('count-normal').textContent = stats.normal;
+        document.getElementById('count-closed').textContent = stats.closed;
+
+        // 지역별 버튼 생성
+        var guList = document.getElementById('gu-list');
+        var guKeys = Object.keys(stats.gus);
+        guKeys.sort().forEach(function (gu) {
+            var btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.innerHTML = '<span>🏢 ' + gu + '</span><span class="count">' + stats.gus[gu] + '</span>';
+            btn.onclick = function () { filterByGu(gu); };
+            guList.appendChild(btn);
+        });
+
+        // 지도 초기화
         var mapContainer = document.getElementById('map');
         var mapOption = {
-            center: new kakao.maps.LatLng(37.5171, 126.9066),  // 영등포구청 부근
+            center: new kakao.maps.LatLng(37.5171, 126.9066),
             level: 5
         };
-        var map = new kakao.maps.Map(mapContainer, mapOption);
-
-        // 마커 생성
-        stores.forEach(function (store) {
-            if (!store.lat || !store.lng) return;  // 좌표 없는 경우 스킵
-
-            var markerPosition = new kakao.maps.LatLng(store.lat, store.lng);
-
-            // 상태별 마커 이미지 설정
-            var markerColor = store.status === '정상' ?
-                'https://t1.daumcdn.net/localimg/localimages/07/2018/pc/img/marker_spot.png' :
-                'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
-
-            var imageSize = new kakao.maps.Size(36, 37);
-            var imageOption = { offset: new kakao.maps.Point(13, 37) };
-            var markerImage = new kakao.maps.MarkerImage(markerColor, imageSize, imageOption);
-
-            var marker = new kakao.maps.Marker({
-                position: markerPosition,
-                title: store.name,
-                image: markerImage
-            });
-
-            marker.setMap(map);
-
-            // 인포윈도우 내용
-            var statusClass = store.status === '정상' ? 'normal' : 'closed';
-            var statusText = store.status === '정상' ? '🔵 정상 영업' : '🔴 폐업 추정';
-
-            var iwContent = '<div class="iwContent">' +
-                '<div class="name">' + store.name + '</div>' +
-                '<div class="address">' + store.address + '</div>' +
-                '<div class="status ' + statusClass + '">' + statusText + '</div>' +
-                '<div class="match-reason">매칭: ' + store.match_reason + '</div>' +
-                '</div>';
-
-            var infowindow = new kakao.maps.InfoWindow({
-                content: iwContent,
-                removable: true
-            });
-
-            // 클릭 이벤트
-            kakao.maps.event.addListener(marker, 'click', function () {
-                infowindow.open(map, marker);
-            });
-        });
+        map = new kakao.maps.Map(mapContainer, mapOption);
 
         // 지도 컨트롤 추가
         var zoomControl = new kakao.maps.ZoomControl();
         map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+        // 마커 생성 함수
+        function createMarkers(stores) {
+            // 기존 마커 제거
+            clearMarkers();
+
+            stores.forEach(function (store) {
+                if (!store.lat || !store.lng) return;
+
+                var markerPosition = new kakao.maps.LatLng(store.lat, store.lng);
+
+                // 상태별 마커 이미지 설정
+                var markerColor = store.status === '정상' ?
+                    'https://t1.daumcdn.net/localimg/localimages/07/2018/pc/img/marker_spot.png' :
+                    'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
+
+                var imageSize = new kakao.maps.Size(36, 37);
+                var imageOption = { offset: new kakao.maps.Point(13, 37) };
+                var markerImage = new kakao.maps.MarkerImage(markerColor, imageSize, imageOption);
+
+                var marker = new kakao.maps.Marker({
+                    position: markerPosition,
+                    title: store.name,
+                    image: markerImage
+                });
+
+                marker.setMap(map);
+                currentMarkers.push(marker);
+
+                // 인포윈도우 내용
+                var statusClass = store.status === '정상' ? 'normal' : 'closed';
+                var statusText = store.status === '정상' ? '🔵 정상 영업' : '🔴 폐업 추정';
+
+                var iwContent = '<div class="iwContent">' +
+                    '<div class="name">' + store.name + '</div>' +
+                    '<div class="address">' + store.address + '</div>' +
+                    '<div class="status ' + statusClass + '">' + statusText + '</div>' +
+                    '<div class="match-reason">매칭: ' + store.match_reason + '</div>' +
+                    '</div>';
+
+                var infowindow = new kakao.maps.InfoWindow({
+                    content: iwContent,
+                    removable: true
+                });
+
+                // 클릭 이벤트
+                kakao.maps.event.addListener(marker, 'click', function () {
+                    if (currentInfowindow) {
+                        currentInfowindow.close();
+                    }
+                    infowindow.open(map, marker);
+                    currentInfowindow = infowindow;
+                });
+            });
+
+            // 마커에 맞게 지도 범위 조정
+            if (stores.length > 0) {
+                var bounds = new kakao.maps.LatLngBounds();
+                stores.forEach(function (store) {
+                    if (store.lat && store.lng) {
+                        bounds.extend(new kakao.maps.LatLng(store.lat, store.lng));
+                    }
+                });
+                map.setBounds(bounds);
+            }
+        }
+
+        // 마커 제거 함수
+        function clearMarkers() {
+            currentMarkers.forEach(function (marker) {
+                marker.setMap(null);
+            });
+            currentMarkers = [];
+            if (currentInfowindow) {
+                currentInfowindow.close();
+                currentInfowindow = null;
+            }
+        }
+
+        // 필터 버튼 활성화 함수
+        function setActiveButton(activeBtn) {
+            document.querySelectorAll('.filter-btn').forEach(function (btn) {
+                btn.classList.remove('active');
+            });
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+
+        // 필터 표시 함수
+        function showFilterInfo(text) {
+            var filterDiv = document.getElementById('current-filter');
+            var filterText = document.getElementById('filter-text');
+            if (text) {
+                filterDiv.style.display = 'block';
+                filterText.textContent = text;
+            } else {
+                filterDiv.style.display = 'none';
+            }
+        }
+
+        // 전체 보기
+        function showAll() {
+            setActiveButton(null);
+            showFilterInfo(null);
+            document.getElementById('display-info').textContent = '전체 데이터 ' + allStores.length + '개를 표시합니다.';
+            createMarkers(allStores);
+        }
+
+        // 상태별 필터
+        function filterByStatus(status) {
+            var filtered = allStores.filter(function (s) { return s.status === status; });
+            var statusText = status === '정상' ? '🔵 정상 영업' : '🔴 폐업 추정';
+
+            event.target.closest('.filter-btn').classList.add('active');
+            setActiveButton(event.target.closest('.filter-btn'));
+            showFilterInfo(statusText);
+            document.getElementById('display-info').textContent = statusText + ' ' + filtered.length + '개를 표시합니다.';
+            createMarkers(filtered);
+        }
+
+        // 매칭 이유별 필터
+        function filterByMatchReason(reason) {
+            var filtered = allStores.filter(function (s) { return s.match_reason === reason; });
+
+            setActiveButton(event.target.closest('.filter-btn'));
+            showFilterInfo(reason);
+            document.getElementById('display-info').textContent = '매칭 이유: ' + reason + ' (' + filtered.length + '개)';
+            createMarkers(filtered);
+        }
+
+        // 구별 필터
+        function filterByGu(gu) {
+            var filtered = allStores.filter(function (s) { return s.gu === gu; });
+
+            setActiveButton(event.target.closest('.filter-btn'));
+            showFilterInfo(gu);
+            document.getElementById('display-info').textContent = gu + ' 데이터 ' + filtered.length + '개를 표시합니다.';
+            createMarkers(filtered);
+        }
+
+        // 초기 로드: 전체 데이터 표시
+        showAll();
     </script>
 
 </body>

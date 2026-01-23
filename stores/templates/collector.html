@@ -73,42 +73,42 @@
 
         /* 오른쪽: 컨트롤 패널 */
         .control-section {
-            width: 400px;
+            width: 340px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
             border-left: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 30px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 12px;
             overflow-y: auto;
         }
 
         .panel {
             background: rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 14px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .panel-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .form-group label {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -116,12 +116,12 @@
         .form-group input,
         .form-group select {
             width: 100%;
-            padding: 12px 16px;
+            padding: 8px 12px;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
+            border-radius: 8px;
             background: rgba(0, 0, 0, 0.3);
             color: #fff;
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.3s ease;
         }
 
@@ -138,17 +138,27 @@
 
         .btn {
             width: 100%;
-            padding: 14px 24px;
+            padding: 10px 16px;
             border: none;
-            border-radius: 12px;
-            font-size: 15px;
+            border-radius: 10px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
+        }
+
+        .btn-viewer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-viewer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         .btn-primary {
@@ -452,6 +462,17 @@
                         <div class="value" id="resultClosed">0</div>
                         <div class="label">폐업 추정</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- 수집 데이터 보기 버튼 -->
+            <div class="panel">
+                <div class="panel-title">📋 데이터 뷰어</div>
+                <a href="/store-closure/" class="btn btn-viewer" style="text-decoration: none;">
+                    🗺️ 수집 데이터 보기
+                </a>
+                <div class="help-text" style="margin-top: 10px; text-align: center;">
+                    수집 완료된 데이터를 지역별, 상태별로 필터링하여 확인
                 </div>
             </div>
         </div>
