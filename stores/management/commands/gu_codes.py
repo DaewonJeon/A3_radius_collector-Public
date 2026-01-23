@@ -30,9 +30,9 @@ GU_CODES = {
     '영등포구': {'code': 'YD', 'restaurant': 'LOCALDATA_072405_YD', 'tobacco': 'LOCALDATA_114302_YD'},
     '용산구': {'code': 'YS', 'restaurant': 'LOCALDATA_072405_YS', 'tobacco': 'LOCALDATA_114302_YS'},
     '은평구': {'code': 'EP', 'restaurant': 'LOCALDATA_072405_EP', 'tobacco': 'LOCALDATA_114302_EP'},
-    '종로구': {'code': 'JR', 'restaurant': 'LOCALDATA_072405_JR', 'tobacco': 'LOCALDATA_114302_JR'},
+    '종로구': {'code': 'JN', 'restaurant': 'LOCALDATA_072405_JN', 'tobacco': 'LOCALDATA_114302_JN'},
     '중구': {'code': 'JG', 'restaurant': 'LOCALDATA_072405_JG', 'tobacco': 'LOCALDATA_114302_JG'},
-    '중랑구': {'code': 'JN', 'restaurant': 'LOCALDATA_072405_JN', 'tobacco': 'LOCALDATA_114302_JN'},
+    '중랑구': {'code': 'JR', 'restaurant': 'LOCALDATA_072405_JR', 'tobacco': 'LOCALDATA_114302_JR'},
 }
 
 
