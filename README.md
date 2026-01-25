@@ -104,7 +104,7 @@ payload = {"keyword": "영등포", "pageSize": 100}
 | # | 문제 | 원인 | 해결책 |
 |---|------|------|--------|
 | 3 | 좌표계 불일치 | 서울시(TM) ≠ 카카오(WGS84) | pyproj 좌표 변환 |
-| 4 | 전체 레코드 로드 | 응답 속도 저하(3s) | 필요 필드만 Select (0.1s) |
+| 4 | 전체 레코드 로드 | 응답 속도 저하(3s)-(N+1 쿼리 문제) | 필요 필드만 Select (0.1s) |
 | 5 | Race Condition | 동시 수집 충돌 | select_for_update() |
 | 6 | 지리적 변수 통제 | 산/강으로 인한 왜곡 | 상위 10개 평균(1.8km) 기준 |
 | 7 | Rate Limit 초과 | 연속 호출 | 지수 백오프 재시도 |
@@ -136,7 +136,7 @@ docker compose exec web python manage.py migrate
 
 ### 웹 UI (수집기) - 메인 페이지
 
-![Collector UI](images/스크린샷%202026-01-25%20165531.png)
+<img src="images/메인화면.png" alt="Map Result" width="90%">
 
 ```
 http://localhost:8000/
@@ -148,12 +148,12 @@ http://localhost:8000/
 - 정상 매장: 파란색 마커 / 폐업 추정: 빨간색 마커
 
 ### 수집 데이터 뷰어
+<img src="images/전체데이터.png" alt="Map Result" width="90%">
 
 ```
 http://localhost:8000/store-closure/
 ```
 
-**store_closure_map.html** (540줄) - 수집된 전체 데이터 조회 UI
 
 | 기능 | 설명 |
 |------|------|
@@ -170,13 +170,11 @@ http://localhost:8000/store-closure/
 
 ### 개발자 모니터링 대시보드
 
-![Developer Dashboard](images/스크린샷%202026-01-25%20161650.png)
+<img src="images/개발자모니터링.png" alt="Map Result" width="80%">
 
 ```
 http://localhost:8000/dev/monitor/
 ```
-
-**dev_monitor.html** (938줄) - 개발자용 상세 모니터링 UI
 
 | 섹션 | 표시 내용 |
 |------|----------|
@@ -197,38 +195,18 @@ http://localhost:8000/dev/monitor/
 ### CLI 명령어
 
 ```bash
-# 🔥 전체 파이프라인 한 번에 실행 (권장)
+# 전체 파이프라인 한 번에 실행 (권장)
 docker compose exec web python manage.py run_all --gu 영등포구
-
-# 개별 단계 실행
-docker compose exec web python manage.py v2_3_1_collect_yeongdeungpo_daiso --gu 영등포구
-docker compose exec web python manage.py v2_3_2_collect_Convenience_Only --gu 영등포구
-docker compose exec web python manage.py openapi_1 --gu 영등포구
-docker compose exec web python manage.py openapi_2 --gu 영등포구
-docker compose exec web python manage.py check_store_closure --gu 영등포구
 
 # 결과 확인
 # http://127.0.0.1:8000/store-closure/
 ```
 
-### 테스트 실행
 
-```bash
-# 핵심 테스트 (1,256 라인)
-docker compose exec web python manage.py test stores.test_core -v 2
-
-# 스트리밍 테스트 UI
-# http://localhost:8000/dev/test/
-
-# 테스트 항목:
-# 1. ScalabilityTests - 서울 25개 구 경계선 & 최적 반경 테스트
-# 2. EndToEndIntegrationTests - 전체 파이프라인 시뮬레이션
-# 3. DockerReproducibilityTests - Docker 환경 재현성 검증
-```
 
 ---
 
-## ⚡ 성능 지표
+## 🤓성능 지표
 
 | 항목 | 수치 | 비고 |
 |------|------|------|
@@ -240,29 +218,29 @@ docker compose exec web python manage.py test stores.test_core -v 2
 
 ---
 
-## 📈 버전별 개발 히스토리
+## 🥸 버전별 개발 히스토리
 
-### v1.0 — MVP: 데이터 수집기
+##### v1.0 — MVP: 데이터 수집기
 - 카카오 API로 다이소 주변 상권 데이터 수집
 - Rate Limit 준수 (`time.sleep(0.2)`)
 - **한계**: API 45개 제한 미인지 (45개 초과해서 수집 불가🔺)
 
-### v1.1 — 안정성 강화
+##### v1.1 — 안정성 강화
 - `update_or_create()` Upsert 로직 도입
 - Docker/Local DB 포트 충돌 해결
 - **발견**: API 45개 제한 확인
 
-### v2.0 — PostGIS 도입
+##### v2.0 — PostGIS 도입
 - PostgreSQL + PostGIS, GeoDjango 적용
 - 웹 지도 시각화 (`/map/`)
 - **한계**: 45개 제한 미해결
 
-### v2.1 — BigQuery 실험 (실패 → 교훈)
+##### v2.1 — BigQuery 실험 (실패 → 교훈)
 - Google BigQuery + OSM 데이터 시도
 - 서울 다이소: (카카오, 네이버)지도 250개 vs OSM지도 60개 (75% 누락)
 - **교훈**: "구글의 범용성보다 데이터의 정확도가 중요하다"
 
-### v2.3 — 최종 완성: 3중 검증 시스템 ✅
+#### v2.3 — 최종 완성: 3중 검증 시스템 
 - 다이소 공식 API 리버스 엔지니어링
 - 4분면 분할 검색 (Quadrant Search)
 - 3중 교차 검증 (OpenAPI + CSV)
@@ -349,23 +327,23 @@ docker compose exec web python manage.py test stores.test_core -v 2
 └── requirements.txt
 ```
 
-## ⚠️ 프로젝트 한계점 및 향후 계획
+## 😭 프로젝트 한계점 및 향후 계획
 
-### Critical (프로덕션 배포 시 필수)
+##### Critical (프로덕션 배포 시 필수)
 - 환경변수 분리 (SECRET_KEY, DEBUG, DB 비밀번호)
 - 비동기 처리 도입 (Celery + Redis)
 
-### High Priority
+##### High Priority
 - 25개 구 병렬 수집 지원 (현재 순차 실행 22분 소요)
 - 에러 복구 로직 (체크포인트 기반 재시작)
 - API 모킹 테스트 (CI/CD 파이프라인 지원)
 
-### Medium Priority
+##### Medium Priority
 - Service Layer 패턴 분리 (현재 Fat View 구조)
 - 구조화된 로깅 (현재 stdout 출력만 사용)
 - WebSocket 기반 실시간 모니터링
 
-### 상세 분석
+##### 상세 분석
 프로젝트 한계점에 대한 자세한 분석은 다음 문서들을 참고하세요:
 - [프로젝트_한계점_분석요약.md](프로젝트_한계점_분석요약.md) - 확장성 핵심 한계점
 - [비동기_확장_분석_보고서.md](비동기_확장_분석_보고서.md) - 비동기 도입 시 22분 → 2분 개선 기대
@@ -388,7 +366,7 @@ docker compose exec web python manage.py test stores.test_core -v 2
 
 ---
 
-## 📚 관련 문서
+#### 관련 문서
 
 | 문서 | 설명 |
 |------|------|
@@ -401,6 +379,6 @@ docker compose exec web python manage.py test stores.test_core -v 2
 
 ---
 
-## 📄 라이선스
+
 
 이 프로젝트는 **MIT License**에 따라 배포됩니다.
