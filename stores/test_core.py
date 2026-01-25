@@ -724,7 +724,7 @@ class ScalabilityTests(TestCase):
         print()
         
         results = []
-        CURRENT_RADIUS = 1.3  # 현재 사용 중인 반경
+        CURRENT_RADIUS = 1.8  # 현재 사용 중인 반경 (상위 평균 10개 기준)
         total_kakao_sertify = 0
         
         for gu_name, gu_info in SEOUL_GU_BOUNDARIES.items():
@@ -793,14 +793,19 @@ class ScalabilityTests(TestCase):
         total_daiso = sum(r['daiso_count'] for r in results)
         passed_70 = sum(1 for r in results if r['current_coverage'] >= 70)
         
+        # 상위 10개 (최대 반경 필요) 평균
+        top_10_radius = sorted(radius_values, reverse=True)[:10]
+        mean_top_10 = statistics.mean(top_10_radius) if top_10_radius else 0
+
         print(f"\n    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print(f"     100% 커버리지 최소 반경 통계 (실제 다이소 기반)")
         print(f"    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print(f"        🔹 평균 (Mean):     {mean_radius:.3f} km")
-        print(f"        🔹 중앙값 (Median): {median_radius:.3f} km")
-        print(f"        🔻 최솟값 (Min):    {min_r:.3f} km")
-        print(f"        🔺 최댓값 (Max):    {max_r:.3f} km")
-        print(f"        🔹 표준편차 (Std):  {stdev_radius:.3f} km")
+        print(f"        🔹 평균 (Mean):       {mean_radius:.3f} km")
+        print(f"        🔹 상위 10개 평균:    {mean_top_10:.3f} km (★기준★)")
+        print(f"        🔹 중앙값 (Median):   {median_radius:.3f} km")
+        print(f"        🔻 최솟값 (Min):      {min_r:.3f} km")
+        print(f"        🔺 최댓값 (Max):      {max_r:.3f} km")
+        print(f"        🔹 표준편차 (Std):    {stdev_radius:.3f} km")
         print(f"    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         
         print(f"\n    🔹 현재 수집 반경: {CURRENT_RADIUS} km")
@@ -811,7 +816,7 @@ class ScalabilityTests(TestCase):
         print(f"     결론: RADIUS_KM = {CURRENT_RADIUS}km 의 근거")
         print(f"    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print(f"        1. 실제 다이소 기반 100% 커버리지 최소 반경")
-        print(f"           - 평균: {mean_radius:.3f}km, 중앙값: {median_radius:.3f}km")
+        print(f"           - 평균: {mean_radius:.3f}km, 상위 10개 평균: {mean_top_10:.3f}km")
         print(f"        2. 총 수집된 다이소: {total_daiso}개 ({len(results)}개 구)")
         if total_kakao_sertify > 0:
             print(f"           - 카카오 API 보완: {total_kakao_sertify}개")
