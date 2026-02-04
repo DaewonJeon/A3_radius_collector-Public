@@ -93,22 +93,70 @@ payload = {"keyword": "영등포", "pageSize": 100}
 
 ---
 
+### 3. 성능 최적화 — 비동기 & 병렬 처리 (Async/Await)
+
+**문제**: 순차적(Sequential) API 호출 시 네트워크 대기 시간(IO Block)으로 인한 성능 저하
+- 동기 방식: 1개 구(영등포) 수집에 **약 28초** 소요
+- 원인: `requests` 라이브러리의 블로킹 호출로 인해 CPU가 대기하는 시간 발생
+
+**해결**: `asyncio` + `aiohttp` 기반 비동기 시스템 도입
+1. **비동기 I/O**: 네트워크 요청 대기 시간 동안 다른 작업 처리
+2. **4분면 병렬 수집**: 4개의 분면(Quadrants)을 동시에 요청 (`asyncio.gather`)
+3. **Semaphore Rate Limiting**: 카카오 API 제한(초당 요청 수)을 준수하며 최대 8개 동시 실행
+
+```python
+# async_collector.py 핵심 로직
+async def collect_for_daiso(self, daiso, target_gu):
+    # 4분면 동시 수집 (핵심 병렬화 포인트)
+    tasks = [
+        self._collect_quadrant(session, rect, cx, cy)
+        for rect in quadrants
+    ]
+    # 병렬 실행 및 결과 취합
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+```
+
+**결과**: 수집 시간 **75% 단축** (28초 → **약 7초**)
+
+---
+
+### 4. 확장성 확보 — 서울 25개 구 동적 지원
+
+**문제**: 구마다 다른 공공데이터 인허가 서비스명 (예: 강남구 `LOCALDATA_072405_GN` vs 마포구 `LOCALDATA_072405_MP`)
+- 하드코딩 시 25개 구에 대한 분기 처리가 필요하여 유지보수 어려움
+
+**해결**: **동적 코드 매핑 시스템** (`gu_codes.py`)
+- 구 코드(Code)와 서비스명(Service Key)을 매핑 테이블로 관리
+- 팩토리 패턴을 응용하여 구 이름 입력 시 자동으로 해당 구의 API 서비스명 반환
+
+```python
+# gu_codes.py
+GU_CODES = {
+    '강남구': {'code': 'GN', 'restaurant': 'LOCALDATA_072405_GN', ...},
+    '영등포구': {'code': 'YD', 'restaurant': 'LOCALDATA_072405_YD', ...},
+    # ... 25개 구 전체 매핑
+}
+```
+
+**효과**: 코드 수정 없이 설정 추가만으로 **서울 전역 어디든 즉시 확장 가능**
+
+
 
 
 ##  추가 트러블슈팅 요약
 
-| # | 문제 | 원인 | 해결책 |
-|---|------|------|--------|
-| 3 | 좌표계 불일치 | 서울시(TM) ≠ 카카오(WGS84) | pyproj 좌표 변환 |
-| 4 | 전체 레코드 로드 | 응답 속도 저하(3s)-(N+1 쿼리 문제) | 필요 필드만 Select (0.1s) |
-| 5 | Race Condition | 동시 수집 충돌 | select_for_update() |
-| 6 | 지리적 변수 통제 | 산/강으로 인한 왜곡 | 상위 10개 평균(1.8km) 기준 |
-| 7 | Rate Limit 초과 | 연속 호출 | 지수 백오프 재시도 |
-| 8 | 데이터 중복 | 4분면 경계 중복 | 좌표 기반 dedupe |
-| 9 | 메모리 누수 | 대용량 로드 | iterator + gc |
-| 10| 정적 파일 404 | collectstatic 미실행 | whitenoise |
-| 11 | CSV 정합성 | 정적 데이터 | OpenAPI 병행 검증 |
-| 12 | 중구 다이소 문제 | 구 코드 특수케이스 | gu_codes.py 수정 |
+| 문제 | 원인 | 해결책 |
+|------|------|--------|
+| 좌표계 불일치 | 서울시(TM) ≠ 카카오(WGS84) | pyproj 좌표 변환 |
+| 전체 레코드 로드 | 응답 속도 저하(3s)-(N+1 쿼리 문제) | 필요 필드만 Select (0.1s) |
+| Race Condition | 동시 수집 충돌 | select_for_update() |
+| 지리적 변수 통제 | 산/강으로 인한 왜곡 | 상위 10개 평균(1.8km) 기준 |
+| Rate Limit 초과 | 연속 호출 | 지수 백오프 재시도 |
+| 데이터 중복 | 4분면 경계 중복 | 좌표 기반 dedupe |
+| 메모리 누수 | 대용량 로드 | iterator + gc |
+| 정적 파일 404 | collectstatic 미실행 | whitenoise |
+| CSV 정합성 | 정적 데이터 | OpenAPI 병행 검증 |
+| 중구 다이소 문제 | 구 코드 특수케이스 | gu_codes.py 수정 |
 
 > 상세 기록: [트러블슈팅_기록.md](트러블슈팅_기록.md)
 
